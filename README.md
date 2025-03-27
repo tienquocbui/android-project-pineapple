@@ -76,7 +76,44 @@ When the develop branch is stable and ready for release:
 
 ## Development Setup
 
-[Add your development setup instructions here]
+### Requirements
+
+- Android Studio Iguana (2023.2.1) or newer
+- JDK 17 or higher
+- Android SDK with minimum API level 26 (Android 8.0 Oreo)
+- Git
+
+### Getting Started
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/arcreane/android-project-pineapple.git
+   cd android-project-pineapple
+   ```
+
+2. Set up the git hooks:
+   ```bash
+   ./scripts/setup-hooks.sh
+   ```
+
+3. Open the project in Android Studio:
+   - Launch Android Studio
+   - Select "Open an existing project"
+   - Navigate to the cloned repository and click "Open"
+
+4. Sync the project with Gradle files:
+   - Android Studio should automatically sync
+   - If not, select "File > Sync Project with Gradle Files"
+
+5. Run the app:
+   - Connect an Android device or use an emulator
+   - Click the "Run" button (green triangle) in Android Studio
+
+### Troubleshooting
+
+- If you encounter Gradle sync issues, ensure you have the correct JDK version
+- For build errors, check the "Build" tab in Android Studio for specific error messages
+- If GitHub Actions CI builds fail but local builds succeed, check Java version compatibility
 
 ## UML Diagram
 ![UML Diagram](UML.svg)
