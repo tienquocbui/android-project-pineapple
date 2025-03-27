@@ -115,5 +115,86 @@ When the develop branch is stable and ready for release:
 - For build errors, check the "Build" tab in Android Studio for specific error messages
 - If GitHub Actions CI builds fail but local builds succeed, check Java version compatibility
 
+## Contributing
+
+### First-Time Setup
+
+1. Fork the repository on GitHub:
+   - Visit the repository page on GitHub
+   - Click the "Fork" button in the top-right corner
+   - Select your account as the destination
+
+2. Clone your forked repository:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/android-project-pineapple.git
+   cd android-project-pineapple
+   ```
+
+3. Add the original repository as upstream:
+   ```bash
+   git remote add upstream https://github.com/arcreane/android-project-pineapple.git
+   ```
+
+### Making Contributions
+
+1. Sync your local develop branch:
+   ```bash
+   git checkout develop
+   git pull upstream develop
+   git push origin develop
+   ```
+
+2. Create a new feature branch:
+   ```bash
+   git checkout -b feature/your-feature-name develop
+   ```
+   Branch naming convention:
+   - `feature/*` for new features
+   - `bugfix/*` for bug fixes
+   - `docs/*` for documentation changes
+   - `hotfix/*` for urgent production fixes
+
+3. Make your changes:
+   - Write clear, concise commit messages following our convention:
+     ```bash
+     git commit -m "type(scope): description"
+     ```
+   - Types: feat, fix, docs, style, refactor, test, chore
+   - Example: `git commit -m "feat(login): add biometric authentication"`
+
+4. Push your changes:
+   ```bash
+   git push -u origin feature/your-feature-name
+   ```
+
+5. Create a Pull Request:
+   - Go to the original repository on GitHub
+   - Click "Pull Requests" > "New Pull Request"
+   - Select `develop` as the base branch
+   - Write a clear PR description explaining your changes
+   - Link any related issues
+
+6. Address review feedback:
+   - Make requested changes in your feature branch
+   - Commit and push updates
+   - The PR will update automatically
+
+7. After PR is merged:
+   ```bash
+   git checkout develop
+   git pull upstream develop
+   git push origin develop
+   git branch -d feature/your-feature-name
+   ```
+
+### Best Practices
+
+- Keep PRs focused and reasonably sized
+- Update your feature branch regularly with develop
+- Write meaningful commit messages
+- Add tests for new features
+- Update documentation as needed
+- Ensure CI checks pass before requesting review
+
 ## UML Diagram
 ![UML Diagram](UML.svg)
