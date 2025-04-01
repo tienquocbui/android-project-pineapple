@@ -6,6 +6,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.pineapple.capture.activities.LoginActivity;
 import com.pineapple.capture.databinding.ActivityMainBinding;
@@ -22,7 +24,33 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         mAuth = FirebaseAuth.getInstance();
-        binding.textViewGreeting.setText("Hello Android!");
+
+        /* Set up toolbar
+        Toolbar toolbar = binding.toolbar;
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
+        */
+
+        // Set up bottom navigation
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.navigation_home) {
+                // TODO: Switch to home fragment
+                return true;
+            } else if (itemId == R.id.navigation_camera) {
+                // TODO: Switch to camera fragment
+                return true;
+            } else if (itemId == R.id.navigation_profile) {
+                // TODO: Switch to profile fragment
+                return true;
+            }
+            return false;
+        });
+
+        // Start with camera fragment
+        binding.bottomNavigation.setSelectedItemId(R.id.navigation_camera);
     }
 
     @Override
