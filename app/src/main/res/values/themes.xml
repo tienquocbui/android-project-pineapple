@@ -29,6 +29,7 @@
         <item name="backgroundTint">@color/primary_blue_transparent</item>
         <item name="android:padding">12dp</item>
         <item name="android:textStyle">bold</item>
+        <item name="rippleColor">@color/primary_blue</item>
     </style>
 
     <!-- Custom input field style -->
