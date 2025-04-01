@@ -1,6 +1,6 @@
 package com.pineapple.capture.activities;
 
-import android.content.Intent;
+import android.content.Intent; //changing screen
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
