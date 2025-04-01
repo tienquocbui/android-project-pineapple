@@ -29,7 +29,7 @@
         <item name="fontFamily">@font/geist</item>
     </style>
 
-    <style name="Widget.App.Button.Secondary" parent="Widget.MaterialComponents.Button">
+    <style name="Widget.App.Button.Secondary" parent="Widget.MaterialComponents.Button.TextButton">
         <item name="cornerRadius">14dp</item>
         <item name="android:textColor">@color/primary_blue</item>
         <item name="backgroundTint">@color/primary_blue_transparent</item>
