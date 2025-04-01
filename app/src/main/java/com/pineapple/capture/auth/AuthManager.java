@@ -34,6 +34,10 @@ public class AuthManager {
         return instance;
     }
 
+    public Task<AuthResult> signup(String displayName, String email, String password) {
+        return signUp(email, password, displayName);
+    }
+
     public Task<AuthResult> signUp(String email, String password, String displayName) {
         return auth.createUserWithEmailAndPassword(email, password)
                 .addOnSuccessListener(authResult -> {
