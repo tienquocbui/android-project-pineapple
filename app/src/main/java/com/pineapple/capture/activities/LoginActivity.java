@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.pineapple.capture.MainActivity;
 import com.pineapple.capture.auth.AuthManager;
 import com.pineapple.capture.databinding.ActivityLoginBinding;
+import com.pineapple.capture.utils.NetworkUtils;
 
 public class LoginActivity extends AppCompatActivity {
     private ActivityLoginBinding binding;
@@ -37,6 +38,11 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void handleLogin() {
+        if (!NetworkUtils.isConnected(LoginActivity.this)) {
+            Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         String email = binding.emailEditText.getText().toString().trim();
         String password = binding.passwordEditText.getText().toString().trim();
 
