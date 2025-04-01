@@ -12,5 +12,5 @@
 
     <!-- App primary colors -->
     <color name="primary_blue">#1E88E5</color>
-    <color name="primary_blue_transparent">#401E88E5</color>
+    <color name="primary_blue_transparent">#331E88E5</color>
 </resources>
