@@ -8,8 +8,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.pineapple.capture.MainActivity;
 import com.pineapple.capture.R;
-import com.pineapple.capture.feed.MainFeedActivity;
 
 public class AuthActivity extends AppCompatActivity {
     private AuthViewModel authViewModel;
@@ -18,6 +20,7 @@ public class AuthActivity extends AppCompatActivity {
     private MaterialButton loginButton;
     private MaterialButton signupButton;
     private TextView errorText;
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +43,7 @@ public class AuthActivity extends AppCompatActivity {
         // Observe authentication state changes
         authViewModel.getAuthState().observe(this, isAuthenticated -> {
             if (isAuthenticated) {
-                startActivity(new Intent(this, MainFeedActivity.class));
+                startActivity(new Intent(this, MainActivity.class));
                 finish();
             }
         });
@@ -54,6 +57,18 @@ public class AuthActivity extends AppCompatActivity {
                 errorText.setVisibility(View.GONE);
             }
         });
+
+        mAuth = FirebaseAuth.getInstance();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null) {
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+        }
     }
     
     private void handleLogin() {
