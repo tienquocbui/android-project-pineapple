@@ -5,6 +5,8 @@
         <item name="colorPrimary">@color/primary_blue</item>
         <item name="colorPrimaryDark">@color/primary_blue</item>
         <item name="colorAccent">@color/primary_blue</item>
+        <item name="android:fontFamily">@font/geist</item>
+        <item name="fontFamily">@font/geist</item>
     </style>
 
     <style name="Theme.Capture.NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
@@ -13,6 +15,8 @@
         <item name="colorAccent">@color/primary_blue</item>
         <item name="android:windowBackground">@color/background_dark</item>
         <item name="android:statusBarColor">@color/background_dark</item>
+        <item name="android:fontFamily">@font/geist</item>
+        <item name="fontFamily">@font/geist</item>
     </style>
 
     <!-- Custom button styles -->
@@ -21,6 +25,8 @@
         <item name="android:textColor">@color/white</item>
         <item name="backgroundTint">@color/primary_blue</item>
         <item name="android:padding">12dp</item>
+        <item name="android:fontFamily">@font/geist</item>
+        <item name="fontFamily">@font/geist</item>
     </style>
 
     <style name="Widget.App.Button.Secondary" parent="Widget.MaterialComponents.Button">
@@ -30,6 +36,8 @@
         <item name="android:padding">12dp</item>
         <item name="android:textStyle">bold</item>
         <item name="rippleColor">@color/primary_blue</item>
+        <item name="android:fontFamily">@font/geist</item>
+        <item name="fontFamily">@font/geist</item>
     </style>
 
     <!-- Custom input field style -->
@@ -42,5 +50,7 @@
         <item name="boxStrokeColor">@color/primary_blue</item>
         <item name="hintTextColor">@color/primary_blue</item>
         <item name="android:textColorHint">@color/white</item>
+        <item name="android:fontFamily">@font/geist</item>
+        <item name="fontFamily">@font/geist</item>
     </style>
 </resources>
