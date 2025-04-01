@@ -16,7 +16,7 @@
         <activity
             android:name=".activities.LoginActivity"
             android:exported="true"
-            android:theme="@style/Theme.Capture">
+            android:theme="@style/Theme.Capture.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -25,7 +25,7 @@
 
         <activity
             android:name=".activities.SignupActivity"
-            android:theme="@style/Theme.Capture" />
+            android:theme="@style/Theme.Capture.NoActionBar" />
 
         <activity
             android:name=".MainActivity"
