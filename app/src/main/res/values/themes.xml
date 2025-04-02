@@ -62,6 +62,12 @@
         <item name="itemActiveIndicatorStyle">@style/Widget.App.BottomNavigation.ActiveIndicator</item>
         <item name="android:fontFamily">@font/geist</item>
         <item name="fontFamily">@font/geist</item>
+        <item name="shapeAppearanceOverlay">@style/RoundedBottomNav</item>
+    </style>
+
+    <style name="RoundedBottomNav" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">14dp</item>
     </style>
 
     <style name="Widget.App.BottomNavigation.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">

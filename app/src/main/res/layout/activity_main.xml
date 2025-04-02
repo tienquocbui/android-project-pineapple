@@ -51,6 +51,8 @@
         android:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:menu="@menu/bottom_nav_menu"
-        style="@style/Widget.App.BottomNavigation" />
+        style="@style/Widget.App.BottomNavigation"
+
+        />
 
 </androidx.constraintlayout.widget.ConstraintLayout> 
