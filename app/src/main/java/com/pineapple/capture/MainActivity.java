@@ -7,6 +7,7 @@ import android.view.MenuItem;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.ViewCompat;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.pineapple.capture.activities.LoginActivity;
@@ -32,6 +33,12 @@ public class MainActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
         */
+
+        // Remove bottom navigation padding
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation, (v, insets) -> {
+            v.setPadding(0, 0, 0, 0);
+            return insets;
+        });
 
         // Set up bottom navigation
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
