@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import android.util.Patterns;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.button.MaterialButton;
@@ -13,6 +14,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.pineapple.capture.MainActivity;
 import com.pineapple.capture.R;
 
+
+
 public class AuthActivity extends AppCompatActivity {
     private AuthViewModel authViewModel;
     private TextInputEditText usernameInput;
@@ -20,6 +23,7 @@ public class AuthActivity extends AppCompatActivity {
     private MaterialButton loginButton;
     private MaterialButton signupButton;
     private TextView errorText;
+    private TextView resetPasswordLink;
     private FirebaseAuth mAuth;
 
     @Override
@@ -35,10 +39,13 @@ public class AuthActivity extends AppCompatActivity {
         loginButton = findViewById(R.id.login_button);
         signupButton = findViewById(R.id.signup_button);
         errorText = findViewById(R.id.error_text);
-        
+        resetPasswordLink = findViewById(R.id.reset_password_link);
+
+
         // Set up click listeners
         loginButton.setOnClickListener(v -> handleLogin());
         signupButton.setOnClickListener(v -> handleSignup());
+        resetPasswordLink.setOnClickListener(v -> handleResetPassword());
         
         // Observe authentication state changes
         authViewModel.getAuthState().observe(this, isAuthenticated -> {
@@ -88,6 +95,22 @@ public class AuthActivity extends AppCompatActivity {
             authViewModel.signUp(username + "@pineapple.com", password);
         }
     }
+
+    private void handleResetPassword() {
+        String email = usernameInput.getText().toString().trim();
+
+        if (email.isEmpty()) {
+            errorText.setText("Please enter your email");
+            errorText.setVisibility(View.VISIBLE);
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            errorText.setText("Invalid email format");
+            errorText.setVisibility(View.VISIBLE);
+        } else {
+            authViewModel.resetPassword(email);
+        }
+
+    }
+
     
     private boolean validateInput(String username, String password) {
         if (username.isEmpty()) {
@@ -111,4 +134,5 @@ public class AuthActivity extends AppCompatActivity {
         errorText.setVisibility(View.GONE);
         return true;
     }
+
 } 
