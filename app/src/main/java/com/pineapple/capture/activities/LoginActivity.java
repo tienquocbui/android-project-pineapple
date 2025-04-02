@@ -1,6 +1,6 @@
 package com.pineapple.capture.activities;
 
-import android.content.Intent;
+import android.content.Intent; //changing screen
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
@@ -37,6 +37,7 @@ public class LoginActivity extends AppCompatActivity {
     private void setupClickListeners() {
         binding.loginButton.setOnClickListener(v -> handleLogin());
         binding.signupButton.setOnClickListener(v -> startSignupActivity());
+        binding.resetPasswordLink.setOnClickListener(v -> handleResetPassword());
     }
 
     private void handleLogin() {
@@ -72,6 +73,29 @@ public class LoginActivity extends AppCompatActivity {
     private void startSignupActivity() {
         Intent intent = new Intent(this, SignupActivity.class);
         startActivity(intent);
+    }
+
+    private void handleResetPassword() {
+        String email = binding.emailEditText.getText().toString().trim();
+        if (email.isEmpty()) {
+            Toast.makeText(this, "Please enter your email", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        showLoading(true);
+        authManager.sendPasswordResetEmail(email)
+                .addOnCompleteListener(task -> {
+                    showLoading(false);
+                    if (task.isSuccessful()) {
+                        Toast.makeText(this, "Password reset email sent", Toast.LENGTH_SHORT).show();
+                    } else {
+                        String error = task.getException() != null ?
+                                task.getException().getMessage() :
+                                "Failed to send reset password email";
+                        Toast.makeText(LoginActivity.this, error, Toast.LENGTH_LONG).show();
+
+                    }
+                });
     }
 
     private void startMainActivity() {

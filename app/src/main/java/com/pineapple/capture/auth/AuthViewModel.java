@@ -70,6 +70,12 @@ public class AuthViewModel extends ViewModel {
         authState.setValue(false);
     }
 
+    public void resetPassword(String email) {
+        auth.sendPasswordResetEmail(email)
+                .addOnSuccessListener(aVoid -> authState.setValue(true))
+                .addOnFailureListener(e -> errorMessage.setValue("Failed to send reset email"));
+    }
+
     public LiveData<Boolean> getAuthState() {
         return authState;
     }
@@ -93,5 +99,6 @@ public class AuthViewModel extends ViewModel {
         
         public String getUserId() { return userId; }
         public void setUserId(String userId) { this.userId = userId; }
+
     }
 } 
