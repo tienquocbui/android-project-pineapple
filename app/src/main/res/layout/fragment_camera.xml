@@ -25,6 +25,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="32dp" />
 
+<!--    to fix UI-->
     <Button
         android:id="@+id/switch_camera_button"
         android:layout_width="wrap_content"
@@ -36,7 +37,7 @@
         android:backgroundTint="@color/gray"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="16dp"
-        android:layout_marginTop="32dp"/>
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="60dp"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
