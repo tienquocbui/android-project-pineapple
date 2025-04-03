@@ -24,6 +24,9 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        MenuItem cameraItem = binding.bottomNavigation.getMenu().findItem(R.id.navigation_camera);
+        cameraItem.setIconTintList(null);
+
         mAuth = FirebaseAuth.getInstance();
 
         /* Set up toolbar
