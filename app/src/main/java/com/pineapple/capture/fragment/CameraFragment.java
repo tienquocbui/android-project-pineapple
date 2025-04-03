@@ -1,6 +1,8 @@
 package com.pineapple.capture.fragment;
 
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.Manifest;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 public class CameraFragment extends Fragment {
 
     private PreviewView previewView;
+    private boolean isUsingFrontCamera = false;
 
     @Nullable
     @Override
@@ -28,6 +31,16 @@ public class CameraFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_camera, container, false);
         previewView = view.findViewById(R.id.previewView);
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, 100);
+        }
+
+        Button switchCameraButton = view.findViewById(R.id.switch_camera_button);
+        switchCameraButton.setOnClickListener(v -> {
+            isUsingFrontCamera = !isUsingFrontCamera;
+            startCamera();
+        });
 
         Button cancelButton = view.findViewById(R.id.cancel_button);
         cancelButton.setOnClickListener(v -> requireActivity().onBackPressed());
@@ -45,10 +58,15 @@ public class CameraFragment extends Fragment {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
 
+                CameraSelector cameraSelector = new CameraSelector.Builder()
+                        .requireLensFacing(isUsingFrontCamera
+                                ? CameraSelector.LENS_FACING_FRONT
+                                : CameraSelector.LENS_FACING_BACK)
+                        .build();
+
                 Preview preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-                CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
 
                 cameraProvider.unbindAll();
                 cameraProvider.bindToLifecycle(
