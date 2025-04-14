@@ -14,3 +14,8 @@ plugins {
     id 'com.android.application' version '8.2.2' apply false
     id("com.google.gms.google-services") version "4.4.2" apply false
 } 
+
+dependencies {
+    implementation 'com.google.firebase:firebase-storage:20.0.0'
+    implementation 'com.google.firebase:firebase-firestore:24.0.0'
+} 
