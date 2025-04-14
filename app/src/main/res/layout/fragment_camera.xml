@@ -4,54 +4,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/background_dark"
     android:padding="16dp">
-    android:layout_height="match_parent">
 
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
-        android:layout_gravity="center"
         android:layout_width="match_parent"
         android:layout_height="370dp"
-        tools:visibility="gone" />
-
-    <ImageButton
-        android:id="@+id/capture_button"
-        android:layout_width="90sp"
-        android:layout_height="90sp"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="30dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:scaleType="fitXY"
-        android:src="@drawable/ic_camera"
-        app:tint="#fff" />
-
-    <ImageButton
-        android:id="@+id/toggle_flash"
-        android:layout_width="50sp"
-        android:layout_height="50sp"
-        android:src="@drawable/flash"
-        android:layout_gravity="top|start"
-        android:layout_marginTop="70dp"
-        android:layout_marginStart="30dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:scaleType="fitXY"
-        app:tint="#fff"/>
+        tools:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/capture_button"
+        android:layout_gravity="center"/>
 
 
-    <ImageButton
-        android:id="@+id/switch_camera_button"
-        android:layout_width="50sp"
-        android:layout_height="50sp"
-        android:src="@drawable/flip_cam"
-        android:layout_gravity="top|end"
-        android:layout_marginTop="70dp"
-        android:layout_marginEnd="30dp"
-        android:scaleType="fitXY"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        app:tint="#fff"/>
-</FrameLayout>
 
     <ImageButton
         android:id="@+id/capture_button"
@@ -96,6 +61,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/caption_layout"
         android:layout_width="0dp"
@@ -128,5 +94,8 @@
         app:layout_constraintBottom_toTopOf="@id/capture_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
 
 
