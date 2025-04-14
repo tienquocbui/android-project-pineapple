@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,8 +20,16 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.fragment.NavHostFragment;
+
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.pineapple.capture.R;
+import com.pineapple.capture.feed.FeedItem;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -33,9 +42,10 @@ public class CameraFragment extends Fragment {
     private ImageCapture imageCapture;
     private boolean flashEnabled = false;
     private ImageButton toggleFlashButton;
-
-
     private boolean isUsingFrontCamera = false;
+    private File capturedImageFile;
+    private TextInputEditText captionInput;
+    private Button postButton;
 
     @Nullable
     @Override
@@ -44,6 +54,9 @@ public class CameraFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_camera, container, false);
 
         previewView = view.findViewById(R.id.previewView);
+        captionInput = view.findViewById(R.id.caption_input);
+        postButton = view.findViewById(R.id.post_button);
+        postButton.setVisibility(View.GONE);
 
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -56,6 +69,18 @@ public class CameraFragment extends Fragment {
             startCamera();
         });
 
+        Button cancelButton = view.findViewById(R.id.cancel_button);
+        cancelButton.setOnClickListener(v -> {
+            if (capturedImageFile != null) {
+                capturedImageFile = null;
+                postButton.setVisibility(View.GONE);
+                captionInput.setVisibility(View.GONE);
+                startCamera();
+            } else {
+                requireActivity().onBackPressed();
+            }
+        });
+
         ImageButton captureButton = view.findViewById(R.id.capture_button);
         captureButton.setOnClickListener(v -> captureImage());
 
@@ -65,6 +90,8 @@ public class CameraFragment extends Fragment {
             updateFlashIconColor();
             startCamera();
         });
+
+        postButton.setOnClickListener(v -> postToFeed());
 
         startCamera();
 
@@ -87,7 +114,6 @@ public class CameraFragment extends Fragment {
 
                 Preview preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
-
 
                 imageCapture = new ImageCapture.Builder()
                         .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
@@ -117,27 +143,62 @@ public class CameraFragment extends Fragment {
     private void captureImage() {
         if (imageCapture == null) return;
 
-        File photoFile = new File(requireContext().getExternalFilesDir(null),
+        capturedImageFile = new File(requireContext().getExternalFilesDir(null),
                 new SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
                         .format(new Date()) + ".jpg");
 
         ImageCapture.OutputFileOptions outputFileOptions =
-                new ImageCapture.OutputFileOptions.Builder(photoFile).build();
+                new ImageCapture.OutputFileOptions.Builder(capturedImageFile).build();
 
         imageCapture.takePicture(outputFileOptions, ContextCompat.getMainExecutor(requireContext()),
                 new ImageCapture.OnImageSavedCallback() {
                     @Override
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults output) {
-                        Log.d("CameraX", "Image saved: " + photoFile.getAbsolutePath());
+                        Log.d("CameraX", "Image saved: " + capturedImageFile.getAbsolutePath());
+                        postButton.setVisibility(View.VISIBLE);
+                        captionInput.setVisibility(View.VISIBLE);
                     }
 
                     @Override
                     public void onError(@NonNull ImageCaptureException exception) {
                         Log.e("CameraX", "Failed to capture image", exception);
+                        Toast.makeText(requireContext(), "Failed to capture image", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
+    private void postToFeed() {
+        if (capturedImageFile == null) return;
 
+        String caption = captionInput.getText() != null ? captionInput.getText().toString() : "";
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
+        // Upload image to Firebase Storage
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
+        String imageName = "posts/" + userId + "/" + capturedImageFile.getName();
+        StorageReference imageRef = storageRef.child(imageName);
+
+        imageRef.putFile(android.net.Uri.fromFile(capturedImageFile))
+                .addOnSuccessListener(taskSnapshot -> {
+                    // Get the download URL
+                    imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                        // Create FeedItem and save to Firestore
+                        FeedItem feedItem = new FeedItem(userId, caption, uri.toString());
+                        FirebaseFirestore.getInstance().collection("posts")
+                                .add(feedItem)
+                                .addOnSuccessListener(documentReference -> {
+                                    Toast.makeText(requireContext(), "Posted successfully!", Toast.LENGTH_SHORT).show();
+                                    NavHostFragment.findNavController(this).navigate(R.id.action_cameraFragment_to_homeFragment);
+                                })
+                                .addOnFailureListener(e -> {
+                                    Toast.makeText(requireContext(), "Failed to post", Toast.LENGTH_SHORT).show();
+                                    Log.e("CameraFragment", "Error posting to feed", e);
+                                });
+                    });
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(requireContext(), "Failed to upload image", Toast.LENGTH_SHORT).show();
+                    Log.e("CameraFragment", "Error uploading image", e);
+                });
+    }
 }
