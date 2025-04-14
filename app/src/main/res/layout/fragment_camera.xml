@@ -17,6 +17,16 @@
         android:layout_gravity="center"/>
 
 
+    <ImageView
+        android:id="@+id/captured_image_view"
+        android:layout_width="match_parent"
+        android:layout_height="370dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/capture_button"
+        android:scaleType="centerCrop"
+        android:layout_gravity="center" />
+
 
     <ImageButton
         android:id="@+id/capture_button"
