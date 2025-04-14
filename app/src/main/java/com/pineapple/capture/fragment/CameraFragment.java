@@ -7,7 +7,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
@@ -33,6 +32,8 @@ public class CameraFragment extends Fragment {
     private PreviewView previewView;
     private ImageCapture imageCapture;
     private boolean flashEnabled = false;
+    private ImageButton toggleFlashButton;
+
 
     private boolean isUsingFrontCamera = false;
 
@@ -55,15 +56,13 @@ public class CameraFragment extends Fragment {
             startCamera();
         });
 
-        Button cancelButton = view.findViewById(R.id.cancel_button);
-        cancelButton.setOnClickListener(v -> requireActivity().onBackPressed());
-
         ImageButton captureButton = view.findViewById(R.id.capture_button);
         captureButton.setOnClickListener(v -> captureImage());
 
-        ImageButton toggleFlashButton = view.findViewById(R.id.toggle_flash);
+        toggleFlashButton = view.findViewById(R.id.toggle_flash);
         toggleFlashButton.setOnClickListener(v -> {
             flashEnabled = !flashEnabled;
+            updateFlashIconColor();
             startCamera();
         });
 
@@ -97,7 +96,7 @@ public class CameraFragment extends Fragment {
 
                 cameraProvider.unbindAll();
                 cameraProvider.bindToLifecycle(
-                        this, cameraSelector, preview, imageCapture
+                        getViewLifecycleOwner(), cameraSelector, preview, imageCapture
                 );
 
             } catch (ExecutionException | InterruptedException e) {
@@ -105,6 +104,15 @@ public class CameraFragment extends Fragment {
             }
         }, ContextCompat.getMainExecutor(requireContext()));
     }
+
+    private void updateFlashIconColor() {
+        int color = flashEnabled
+                ? ContextCompat.getColor(requireContext(), android.R.color.white)
+                : ContextCompat.getColor(requireContext(), R.color.primary_blue);
+
+        toggleFlashButton.setColorFilter(color);
+    }
+
 
     private void captureImage() {
         if (imageCapture == null) return;
