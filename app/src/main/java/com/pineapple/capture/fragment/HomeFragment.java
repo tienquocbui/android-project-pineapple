@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import com.pineapple.capture.R;
 import com.pineapple.capture.databinding.FragmentHomeBinding;
-import com.pineapple.capture.viewmodel.ProfileViewModel;
+import com.pineapple.capture.profile.ProfileViewModel;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
