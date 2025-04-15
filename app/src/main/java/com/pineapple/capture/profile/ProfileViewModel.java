@@ -15,6 +15,7 @@ public class ProfileViewModel extends ViewModel {
     private final MutableLiveData<User> userData;
     private final MutableLiveData<String> errorMessage;
     private final MutableLiveData<Boolean> isLoading;
+    private final MutableLiveData<Boolean> deletionResult;
 
     public ProfileViewModel() {
         mAuth = FirebaseAuth.getInstance();
@@ -22,6 +23,7 @@ public class ProfileViewModel extends ViewModel {
         userData = new MutableLiveData<>();
         errorMessage = new MutableLiveData<>();
         isLoading = new MutableLiveData<>(false);
+        deletionResult = new MutableLiveData<>();
         loadUserData();
     }
 
@@ -32,17 +34,31 @@ public class ProfileViewModel extends ViewModel {
             db.collection("users").document(currentUser.getUid())
                     .get()
                     .addOnSuccessListener(documentSnapshot -> {
+                        if (!documentSnapshot.exists()) {
+                            errorMessage.setValue("User document does not exist");
+                            isLoading.setValue(false);
+                            return;
+                        }
+                        
                         User user = documentSnapshot.toObject(User.class);
                         if (user != null) {
                             user.setId(currentUser.getUid());
+                            // Set display name from Firebase User if not set in Firestore
+                            if (user.getDisplayName() == null || user.getDisplayName().isEmpty()) {
+                                user.setDisplayName(currentUser.getDisplayName());
+                            }
                             userData.setValue(user);
+                        } else {
+                            errorMessage.setValue("Failed to convert document to User object");
                         }
                         isLoading.setValue(false);
                     })
                     .addOnFailureListener(e -> {
-                        errorMessage.setValue("Failed to load user data");
+                        errorMessage.setValue("Failed to load user data: " + e.getMessage());
                         isLoading.setValue(false);
                     });
+        } else {
+            errorMessage.setValue("No current user found");
         }
     }
 
@@ -125,8 +141,10 @@ public class ProfileViewModel extends ViewModel {
                                 user.delete()
                                     .addOnCompleteListener(deleteTask -> {
                                         if (deleteTask.isSuccessful()) {
+                                            deletionResult.setValue(true);
                                             errorMessage.setValue("Account deleted successfully");
                                         } else {
+                                            deletionResult.setValue(false);
                                             errorMessage.setValue("Failed to delete account: " + 
                                                 deleteTask.getException().getMessage());
                                         }
@@ -134,10 +152,12 @@ public class ProfileViewModel extends ViewModel {
                                     });
                             })
                             .addOnFailureListener(e -> {
+                                deletionResult.setValue(false);
                                 errorMessage.setValue("Failed to delete user data");
                                 isLoading.setValue(false);
                             });
                     } else {
+                        deletionResult.setValue(false);
                         errorMessage.setValue("Current password is incorrect");
                         isLoading.setValue(false);
                     }
@@ -155,5 +175,9 @@ public class ProfileViewModel extends ViewModel {
 
     public LiveData<Boolean> getIsLoading() {
         return isLoading;
+    }
+
+    public LiveData<Boolean> getDeletionResult() {
+        return deletionResult;
     }
 } 
