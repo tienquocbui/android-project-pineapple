@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,7 +32,7 @@ public class ProfileFragment extends Fragment {
 
         mAuth = FirebaseAuth.getInstance();
 
-        Button logoutButton = view.findViewById(R.id.logout_button);
+        ImageButton logoutButton = view.findViewById(R.id.logout_button);
         logoutButton.setOnClickListener(v -> logout());
 
         return view;
