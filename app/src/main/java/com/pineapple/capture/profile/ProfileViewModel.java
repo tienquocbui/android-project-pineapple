@@ -203,28 +203,68 @@ public class ProfileViewModel extends ViewModel {
         }
     }
 
-    public void updateDisplayName(String newDisplayName) {
+    public void updateDisplayName(String newUsername) {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user == null) {
             errorMessage.setValue("No user is currently signed in");
             return;
         }
 
-        // Update display name in Firestore
+        // Validate username format
+        if (!isValidUsername(newUsername)) {
+            errorMessage.setValue("Invalid username format");
+            return;
+        }
+
+        // First check if the new username is the same as the current one
+        User currentUser = userData.getValue();
+        if (currentUser != null && currentUser.getUsername().equals(newUsername)) {
+            errorMessage.setValue("This is already your username");
+            return;
+        }
+
+        // Update username in Firestore
         db.collection("users").document(user.getUid())
-            .update("displayName", newDisplayName)
+            .update("username", newUsername)
             .addOnSuccessListener(aVoid -> {
                 // Update the local user data
-                User currentUser = userData.getValue();
                 if (currentUser != null) {
-                    currentUser.setDisplayName(newDisplayName);
+                    currentUser.setUsername(newUsername);
                     userData.setValue(currentUser);
                 }
-                errorMessage.setValue("Display name updated successfully");
+                errorMessage.setValue("Username updated successfully");
             })
             .addOnFailureListener(e -> {
-                errorMessage.setValue("Failed to update display name: " + e.getMessage());
+                if (e.getMessage().contains("PERMISSION_DENIED")) {
+                    errorMessage.setValue("Permission denied. Please check your Firestore security rules.");
+                } else {
+                    errorMessage.setValue("Failed to update username: " + e.getMessage());
+                }
             });
+    }
+
+    private boolean isValidUsername(String username) {
+        // Check length
+        if (username.length() < 1 || username.length() > 30) {
+            return false;
+        }
+
+        // Check for spaces
+        if (username.contains(" ")) {
+            return false;
+        }
+
+        // Check for special characters
+        if (!username.matches("^[a-zA-Z0-9._]+$")) {
+            return false;
+        }
+
+        // Check for periods at beginning or end
+        if (username.startsWith(".") || username.endsWith(".")) {
+            return false;
+        }
+
+        return true;
     }
 
     public LiveData<User> getUserData() {
