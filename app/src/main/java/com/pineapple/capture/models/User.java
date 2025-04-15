@@ -7,16 +7,18 @@ public class User {
     private String username;
     private String email;
     private String profilePictureUrl;
+    private String displayName;
 
     public User() {
         // Required empty constructor for Firestore
     }
 
-    public User(String id, String username, String email, String profilePictureUrl) {
+    public User(String id, String username, String email, String profilePictureUrl, String displayName) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.profilePictureUrl = profilePictureUrl;
+        this.displayName = displayName;
     }
 
     @Exclude
@@ -50,5 +52,13 @@ public class User {
 
     public void setProfilePictureUrl(String profilePictureUrl) {
         this.profilePictureUrl = profilePictureUrl;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 } 

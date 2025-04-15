@@ -7,14 +7,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.pineapple.capture.R;
@@ -25,8 +28,9 @@ import com.pineapple.capture.models.User;
 public class ProfileFragment extends Fragment {
 
     private ProfileViewModel viewModel;
+    private ImageView profileImage;
+    private TextView displayNameText;
     private TextView usernameText;
-    private TextView emailText;
     private Button editEmailButton;
     private Button changePasswordButton;
     private Button logoutButton;
@@ -42,8 +46,9 @@ public class ProfileFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
 
         // Initialize views
+        profileImage = view.findViewById(R.id.profile_image);
+        displayNameText = view.findViewById(R.id.display_name);
         usernameText = view.findViewById(R.id.username);
-        emailText = view.findViewById(R.id.email);
         editEmailButton = view.findViewById(R.id.edit_email_button);
         changePasswordButton = view.findViewById(R.id.change_password_button);
         logoutButton = view.findViewById(R.id.logout_button);
@@ -70,8 +75,16 @@ public class ProfileFragment extends Fragment {
 
     private void updateUI(User user) {
         if (user != null) {
+            displayNameText.setText(user.getDisplayName());
             usernameText.setText(user.getUsername());
-            emailText.setText(user.getEmail());
+            
+            // Load profile image using Glide
+            if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
+                Glide.with(this)
+                        .load(user.getProfilePictureUrl())
+                        .circleCrop()
+                        .into(profileImage);
+            }
         }
     }
 
@@ -128,6 +141,23 @@ public class ProfileFragment extends Fragment {
                 .setPositiveButton("Delete", (dialog, which) -> {
                     String password = passwordInput.getText().toString();
                     viewModel.deleteAccount(password);
+                    
+                    // Observe the deletion result
+                    viewModel.getDeletionResult().observe(getViewLifecycleOwner(), result -> {
+                        if (result != null) {
+                            if (result) {
+                                // Navigate to login screen
+                                Intent intent = new Intent(requireContext(), LoginActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                startActivity(intent);
+                                requireActivity().finish();
+                            } else {
+                                Toast.makeText(requireContext(), 
+                                    "Failed to delete account", 
+                                    Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
                 })
                 .setNegativeButton("Cancel", null)
                 .show();

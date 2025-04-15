@@ -12,6 +12,7 @@ import com.pineapple.capture.models.User;
 public class ProfileActivity extends AppCompatActivity {
     private ProfileViewModel viewModel;
     private ImageView profileImage;
+    private TextView displayName;
     private TextView userName;
     private TextView userEmail;
 
@@ -23,12 +24,14 @@ public class ProfileActivity extends AppCompatActivity {
         viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
         
         profileImage = findViewById(R.id.profile_image);
-        userName = findViewById(R.id.user_name);
+        displayName = findViewById(R.id.user_name);
+        userName = findViewById(R.id.username);
         userEmail = findViewById(R.id.user_email);
 
         // Observe user data changes
         viewModel.getUserData().observe(this, user -> {
             if (user != null) {
+                displayName.setText(user.getDisplayName());
                 userName.setText(user.getUsername());
                 userEmail.setText(user.getEmail());
                 

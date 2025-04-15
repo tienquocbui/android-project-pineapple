@@ -28,7 +28,7 @@ public class SignupActivity extends AppCompatActivity {
 
     private void setupClickListeners() {
         binding.signupButton.setOnClickListener(v -> handleSignup());
-        binding.loginButton.setOnClickListener(v -> finish()); // Quay về LoginActivity
+        binding.loginButton.setOnClickListener(v -> finish());
     }
 
     private void handleSignup() {

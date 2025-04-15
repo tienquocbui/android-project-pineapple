@@ -43,7 +43,7 @@ public class AuthManager {
                 .addOnSuccessListener(authResult -> {
                     FirebaseUser firebaseUser = authResult.getUser();
                     if (firebaseUser != null) {
-                        // Update display name
+                        // Update display name in Firebase Auth
                         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                                 .setDisplayName(displayName)
                                 .build();
@@ -53,8 +53,9 @@ public class AuthManager {
                         User user = new User(
                                 firebaseUser.getUid(),
                                 email,
-                                displayName,
-                                null // No profile picture initially
+                                email, // username
+                                null, // No profile picture initially
+                                displayName
                         );
                         db.collection(USERS_COLLECTION)
                                 .document(firebaseUser.getUid())
