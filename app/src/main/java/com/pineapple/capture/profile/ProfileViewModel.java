@@ -62,32 +62,47 @@ public class ProfileViewModel extends ViewModel {
         }
     }
 
-    public void updateEmail(String newEmail) {
+    public void updateEmail(String currentPassword, String newEmail) {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
             isLoading.setValue(true);
-            user.updateEmail(newEmail)
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            // Update email in Firestore
-                            db.collection("users").document(user.getUid())
-                                    .update("email", newEmail)
-                                    .addOnSuccessListener(aVoid -> {
-                                        User updatedUser = userData.getValue();
-                                        if (updatedUser != null) {
-                                            updatedUser.setEmail(newEmail);
-                                            userData.setValue(updatedUser);
-                                        }
-                                        errorMessage.setValue("Email updated successfully");
-                                    })
-                                    .addOnFailureListener(e -> 
-                                        errorMessage.setValue("Failed to update email in database"));
-                        } else {
-                            errorMessage.setValue("Failed to update email: " + 
-                                task.getException().getMessage());
-                        }
+            
+            // Re-authenticate user before changing email
+            com.google.firebase.auth.AuthCredential credential = 
+                com.google.firebase.auth.EmailAuthProvider.getCredential(
+                    user.getEmail(), currentPassword);
+            
+            user.reauthenticate(credential)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        // Update email in Firebase Auth
+                        user.updateEmail(newEmail)
+                            .addOnCompleteListener(emailTask -> {
+                                if (emailTask.isSuccessful()) {
+                                    // Update email in Firestore
+                                    db.collection("users").document(user.getUid())
+                                        .update("email", newEmail)
+                                        .addOnSuccessListener(aVoid -> {
+                                            User updatedUser = userData.getValue();
+                                            if (updatedUser != null) {
+                                                updatedUser.setEmail(newEmail);
+                                                userData.setValue(updatedUser);
+                                            }
+                                            errorMessage.setValue("Email updated successfully");
+                                        })
+                                        .addOnFailureListener(e -> 
+                                            errorMessage.setValue("Failed to update email in database"));
+                                } else {
+                                    errorMessage.setValue("Failed to update email: " + 
+                                        emailTask.getException().getMessage());
+                                }
+                                isLoading.setValue(false);
+                            });
+                    } else {
+                        errorMessage.setValue("Current password is incorrect");
                         isLoading.setValue(false);
-                    });
+                    }
+                });
         }
     }
 
