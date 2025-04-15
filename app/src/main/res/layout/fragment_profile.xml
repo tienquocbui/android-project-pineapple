@@ -1,16 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
     android:background="@color/background_dark"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:gravity="center_horizontal">
 
-    <Button
+    <ImageView
+        android:id="@+id/avatar_image"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginTop="50dp"
+        android:src="@drawable/default_profile"
+        android:scaleType="centerCrop"
+        android:background="@drawable/circle_border"/>
+
+    <TextView
+        android:id="@+id/username"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Username"
+        android:textColor="@android:color/white"
+        android:textSize="30sp"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="20dp"
+        />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <ImageButton
         android:id="@+id/logout_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Log out"
-        android:textColor="@android:color/white"
-        android:backgroundTint="@color/white"
-        android:layout_gravity="center" />
-</FrameLayout>
+        android:src="@drawable/ic_log_out"
+        app:tint="@android:color/white"
+        android:layout_gravity="center"
+        android:background="@android:color/transparent" />
+</LinearLayout>
