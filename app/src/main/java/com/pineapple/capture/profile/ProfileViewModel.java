@@ -6,6 +6,10 @@ import androidx.lifecycle.ViewModel;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.EmailAuthProvider;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.pineapple.capture.models.User;
 
@@ -64,46 +68,65 @@ public class ProfileViewModel extends ViewModel {
 
     public void updateEmail(String currentPassword, String newEmail) {
         FirebaseUser user = mAuth.getCurrentUser();
-        if (user != null) {
-            isLoading.setValue(true);
-            
-            // Re-authenticate user before changing email
-            com.google.firebase.auth.AuthCredential credential = 
-                com.google.firebase.auth.EmailAuthProvider.getCredential(
-                    user.getEmail(), currentPassword);
-            
-            user.reauthenticate(credential)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        // Update email in Firebase Auth
-                        user.updateEmail(newEmail)
-                            .addOnCompleteListener(emailTask -> {
-                                if (emailTask.isSuccessful()) {
-                                    // Update email in Firestore
-                                    db.collection("users").document(user.getUid())
-                                        .update("email", newEmail)
-                                        .addOnSuccessListener(aVoid -> {
-                                            User updatedUser = userData.getValue();
-                                            if (updatedUser != null) {
-                                                updatedUser.setEmail(newEmail);
-                                                userData.setValue(updatedUser);
-                                            }
-                                            errorMessage.setValue("Email updated successfully");
-                                        })
-                                        .addOnFailureListener(e -> 
-                                            errorMessage.setValue("Failed to update email in database"));
-                                } else {
-                                    errorMessage.setValue("Failed to update email: " + 
-                                        emailTask.getException().getMessage());
-                                }
-                                isLoading.setValue(false);
-                            });
-                    } else {
-                        errorMessage.setValue("Current password is incorrect");
-                        isLoading.setValue(false);
-                    }
-                });
+        if (user == null) {
+            errorMessage.setValue("No user is currently signed in");
+            return;
         }
+
+        // First, re-authenticate the user
+        AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), currentPassword);
+        user.reauthenticate(credential)
+            .addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    // After successful re-authentication, update the email
+                    user.updateEmail(newEmail)
+                        .addOnCompleteListener(emailTask -> {
+                            if (emailTask.isSuccessful()) {
+                                // Update email in Firestore
+                                db.collection("users").document(user.getUid())
+                                    .update("email", newEmail)
+                                    .addOnSuccessListener(aVoid -> {
+                                        // Update the local user data
+                                        User currentUser = userData.getValue();
+                                        if (currentUser != null) {
+                                            currentUser.setEmail(newEmail);
+                                            userData.setValue(currentUser);
+                                        }
+                                        errorMessage.setValue("Email updated successfully");
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        // If Firestore update fails, revert the email in Firebase Auth
+                                        user.updateEmail(user.getEmail())
+                                            .addOnCompleteListener(revertTask -> {
+                                                if (!revertTask.isSuccessful()) {
+                                                    errorMessage.setValue("Failed to update email and couldn't revert changes. Please contact support.");
+                                                } else {
+                                                    errorMessage.setValue("Failed to update email in database. Changes reverted.");
+                                                }
+                                            });
+                                    });
+                            } else {
+                                Exception exception = emailTask.getException();
+                                if (exception instanceof FirebaseAuthRecentLoginRequiredException) {
+                                    errorMessage.setValue("Please sign in again to change your email");
+                                } else if (exception instanceof FirebaseAuthInvalidCredentialsException) {
+                                    errorMessage.setValue("Invalid email format");
+                                } else {
+                                    errorMessage.setValue("Failed to update email: " + exception.getMessage());
+                                }
+                            }
+                        });
+                } else {
+                    Exception exception = task.getException();
+                    if (exception instanceof FirebaseAuthInvalidCredentialsException) {
+                        errorMessage.setValue("Current password is incorrect");
+                    } else if (exception instanceof FirebaseAuthRecentLoginRequiredException) {
+                        errorMessage.setValue("Please sign in again to change your email");
+                    } else {
+                        errorMessage.setValue("Authentication failed: " + exception.getMessage());
+                    }
+                }
+            });
     }
 
     public void updatePassword(String currentPassword, String newPassword) {
@@ -178,6 +201,30 @@ public class ProfileViewModel extends ViewModel {
                     }
                 });
         }
+    }
+
+    public void updateDisplayName(String newDisplayName) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            errorMessage.setValue("No user is currently signed in");
+            return;
+        }
+
+        // Update display name in Firestore
+        db.collection("users").document(user.getUid())
+            .update("displayName", newDisplayName)
+            .addOnSuccessListener(aVoid -> {
+                // Update the local user data
+                User currentUser = userData.getValue();
+                if (currentUser != null) {
+                    currentUser.setDisplayName(newDisplayName);
+                    userData.setValue(currentUser);
+                }
+                errorMessage.setValue("Display name updated successfully");
+            })
+            .addOnFailureListener(e -> {
+                errorMessage.setValue("Failed to update display name: " + e.getMessage());
+            });
     }
 
     public LiveData<User> getUserData() {

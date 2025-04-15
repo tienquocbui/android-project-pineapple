@@ -55,7 +55,8 @@ public class ProfileFragment extends Fragment {
         deleteAccountButton = view.findViewById(R.id.delete_account_button);
 
         // Set up click listeners
-        editEmailButton.setOnClickListener(v -> showEditEmailDialog());
+        editEmailButton.setOnClickListener(v -> showEditDisplayNameDialog());
+        editEmailButton.setText("Change Display Name");
         changePasswordButton.setOnClickListener(v -> showChangePasswordDialog());
         logoutButton.setOnClickListener(v -> logout());
         deleteAccountButton.setOnClickListener(v -> showDeleteAccountDialog());
@@ -93,29 +94,62 @@ public class ProfileFragment extends Fragment {
         EditText currentPasswordInput = dialogView.findViewById(R.id.current_password_input);
         EditText newEmailInput = dialogView.findViewById(R.id.new_email_input);
 
-        new MaterialAlertDialogBuilder(requireContext())
+        MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Change Email")
                 .setView(dialogView)
-                .setPositiveButton("Update", (dialog, which) -> {
-                    String currentPassword = currentPasswordInput.getText().toString().trim();
-                    String newEmail = newEmailInput.getText().toString().trim();
-                    
-                    if (currentPassword.isEmpty()) {
-                        Toast.makeText(requireContext(), "Please enter your current password", 
-                            Toast.LENGTH_SHORT).show();
-                        return;
+                .setPositiveButton("Update", null) // Set to null to handle click manually
+                .setNegativeButton("Cancel", null);
+
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                String currentPassword = currentPasswordInput.getText().toString().trim();
+                String newEmail = newEmailInput.getText().toString().trim();
+                
+                if (currentPassword.isEmpty()) {
+                    Toast.makeText(requireContext(), "Please enter your current password", 
+                        Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                if (newEmail.isEmpty()) {
+                    Toast.makeText(requireContext(), "Please enter a new email", 
+                        Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(newEmail).matches()) {
+                    Toast.makeText(requireContext(), "Please enter a valid email address", 
+                        Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Show loading state
+                positiveButton.setEnabled(false);
+                currentPasswordInput.setEnabled(false);
+                newEmailInput.setEnabled(false);
+                
+                viewModel.updateEmail(currentPassword, newEmail);
+                
+                // Observe the result
+                viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+                    if (message != null && !message.isEmpty()) {
+                        if (message.contains("successfully")) {
+                            dialog.dismiss();
+                        }
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        
+                        // Re-enable inputs
+                        positiveButton.setEnabled(true);
+                        currentPasswordInput.setEnabled(true);
+                        newEmailInput.setEnabled(true);
                     }
-                    
-                    if (newEmail.isEmpty()) {
-                        Toast.makeText(requireContext(), "Please enter a new email", 
-                            Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    
-                    viewModel.updateEmail(currentPassword, newEmail);
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+                });
+            });
+        });
+
+        dialog.show();
     }
 
     private void showChangePasswordDialog() {
@@ -182,5 +216,71 @@ public class ProfileFragment extends Fragment {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         requireActivity().finish();
+    }
+
+    private void showEditDisplayNameDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_display_name, null);
+        EditText newDisplayNameInput = dialogView.findViewById(R.id.new_display_name_input);
+
+        MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Change Display Name")
+                .setView(dialogView)
+                .setPositiveButton("Update", null)
+                .setNegativeButton("Cancel", null);
+
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                String newDisplayName = newDisplayNameInput.getText().toString().trim();
+                
+                if (newDisplayName.isEmpty()) {
+                    Toast.makeText(requireContext(), "Please enter a display name", 
+                        Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (newDisplayName.length() > 30) {
+                    Toast.makeText(requireContext(), "Display name cannot be longer than 30 characters", 
+                        Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Validate display name format
+                if (!isValidDisplayName(newDisplayName)) {
+                    Toast.makeText(requireContext(), 
+                        "Display name can only contain letters, numbers, spaces, and basic punctuation", 
+                        Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Show loading state
+                positiveButton.setEnabled(false);
+                newDisplayNameInput.setEnabled(false);
+                
+                viewModel.updateDisplayName(newDisplayName);
+                
+                // Observe the result
+                viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+                    if (message != null && !message.isEmpty()) {
+                        if (message.contains("successfully")) {
+                            dialog.dismiss();
+                        }
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        
+                        // Re-enable inputs
+                        positiveButton.setEnabled(true);
+                        newDisplayNameInput.setEnabled(true);
+                    }
+                });
+            });
+        });
+
+        dialog.show();
+    }
+
+    private boolean isValidDisplayName(String displayName) {
+        // Only allow letters, numbers, spaces, and basic punctuation
+        return displayName.matches("^[a-zA-Z0-9\\s.,!?-]+$");
     }
 }
