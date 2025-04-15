@@ -1,28 +1,39 @@
 package com.pineapple.capture.models;
 
+import com.google.firebase.firestore.Exclude;
+
 public class User {
-    private String uid;
+    private String id;
+    private String username;
     private String email;
-    private String displayName;
     private String profilePictureUrl;
 
-    // Empty constructor for Firestore
-    public User() {}
+    public User() {
+        // Required empty constructor for Firestore
+    }
 
-    public User(String uid, String email, String displayName, String profilePictureUrl) {
-        this.uid = uid;
+    public User(String id, String username, String email, String profilePictureUrl) {
+        this.id = id;
+        this.username = username;
         this.email = email;
-        this.displayName = displayName;
         this.profilePictureUrl = profilePictureUrl;
     }
 
-    // Getters and setters
-    public String getUid() {
-        return uid;
+    @Exclude
+    public String getId() {
+        return id;
     }
 
-    public void setUid(String uid) {
-        this.uid = uid;
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getEmail() {
@@ -31,14 +42,6 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
     }
 
     public String getProfilePictureUrl() {
