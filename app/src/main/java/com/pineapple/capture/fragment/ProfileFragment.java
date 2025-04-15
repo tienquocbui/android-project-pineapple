@@ -246,6 +246,14 @@ public class ProfileFragment extends Fragment {
                     return;
                 }
 
+                // Validate display name format
+                if (!isValidDisplayName(newDisplayName)) {
+                    Toast.makeText(requireContext(), 
+                        "Display name can only contain letters, numbers, spaces, and basic punctuation", 
+                        Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 // Show loading state
                 positiveButton.setEnabled(false);
                 newDisplayNameInput.setEnabled(false);
@@ -269,5 +277,10 @@ public class ProfileFragment extends Fragment {
         });
 
         dialog.show();
+    }
+
+    private boolean isValidDisplayName(String displayName) {
+        // Only allow letters, numbers, spaces, and basic punctuation
+        return displayName.matches("^[a-zA-Z0-9\\s.,!?-]+$");
     }
 }
