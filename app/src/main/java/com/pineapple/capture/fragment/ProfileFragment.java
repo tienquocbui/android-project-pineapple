@@ -90,16 +90,29 @@ public class ProfileFragment extends Fragment {
 
     private void showEditEmailDialog() {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_email, null);
+        EditText currentPasswordInput = dialogView.findViewById(R.id.current_password_input);
         EditText newEmailInput = dialogView.findViewById(R.id.new_email_input);
 
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Change Email")
                 .setView(dialogView)
                 .setPositiveButton("Update", (dialog, which) -> {
+                    String currentPassword = currentPasswordInput.getText().toString().trim();
                     String newEmail = newEmailInput.getText().toString().trim();
-                    if (!newEmail.isEmpty()) {
-                        viewModel.updateEmail(newEmail);
+                    
+                    if (currentPassword.isEmpty()) {
+                        Toast.makeText(requireContext(), "Please enter your current password", 
+                            Toast.LENGTH_SHORT).show();
+                        return;
                     }
+                    
+                    if (newEmail.isEmpty()) {
+                        Toast.makeText(requireContext(), "Please enter a new email", 
+                            Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    
+                    viewModel.updateEmail(currentPassword, newEmail);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
