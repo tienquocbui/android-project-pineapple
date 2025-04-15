@@ -7,6 +7,7 @@ import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.os.Bundle;
 import android.Manifest;
+import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -27,14 +28,21 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.fragment.NavHostFragment;
 //import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.pineapple.capture.R;
+import com.pineapple.capture.feed.FeedItem;
 //import com.pineapple.capture.feed.FeedItem;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -80,6 +88,7 @@ public class CameraFragment extends Fragment {
         cancelButton.setOnClickListener(v -> {
             if (capturedImageFile != null) {
                 capturedImageFile = null;
+
                 postButton.setVisibility(View.GONE);
                 captionInput.setVisibility(View.GONE);
 
@@ -102,7 +111,7 @@ public class CameraFragment extends Fragment {
             startCamera();
         });
 
-//        postButton.setOnClickListener(v -> postToFeed());
+        postButton.setOnClickListener(v -> postToFeed());
 
         startCamera();
 
@@ -214,37 +223,43 @@ public class CameraFragment extends Fragment {
                 });
     }
 
-//    private void postToFeed() {
-//        if (capturedImageFile == null) return;
-//
-//        String caption = captionInput.getText() != null ? captionInput.getText().toString() : "";
-//        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-//
-//        // Upload image to Firebase Storage
-//        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
-//        String imageName = "posts/" + userId + "/" + capturedImageFile.getName();
-//        StorageReference imageRef = storageRef.child(imageName);
-//
-//        imageRef.putFile(android.net.Uri.fromFile(capturedImageFile))
-//                .addOnSuccessListener(taskSnapshot -> {
-//                    // Get the download URL
-//                    imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-//                        // Create FeedItem and save to Firestore
-//                        FeedItem feedItem = new FeedItem(userId, caption, uri.toString());
-//                        FirebaseFirestore.getInstance().collection("posts")
-//                                .add(feedItem)
-//                                .addOnSuccessListener(documentReference -> {
-//                                    Toast.makeText(requireContext(), "Posted successfully!", Toast.LENGTH_SHORT).show();
-//                                    NavHostFragment.findNavController(this).navigate(R.id.action_cameraFragment_to_homeFragment);
-//                                })
-//                                .addOnFailureListener(e -> {
-//                                    Toast.makeText(requireContext(), "Failed to post", Toast.LENGTH_SHORT).show();
-//                                    Log.e("CameraFragment", "Error posting to feed", e);
-//                                });
-//                    });
-//                })
-//                .addOnFailureListener(e -> {
-//                    Toast.makeText(requireContext(), "Failed to upload image", Toast.LENGTH_SHORT).show();
-//                    Log.e("CameraFragment", "Error uploading image", e);
-//                });
+    private void postToFeed() {
+        if (capturedImageFile == null) return;
+
+        String caption = captionInput.getText() != null ? captionInput.getText().toString() : "";
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        // we cannot store images in Firebase because it is payant
+        // so now we convert it to Base64 and store them in Firebase firestore
+
+        // change image to Base64
+        String base64Image = encodeImageToBase64(capturedImageFile);
+
+        // save in the database
+        FeedItem feedItem = new FeedItem(userId, caption, base64Image);
+
+        FirebaseFirestore.getInstance().collection("posts")
+                .add(feedItem)
+                .addOnSuccessListener(documentReference -> {
+                    Toast.makeText(requireContext(), "Posted successfully!", Toast.LENGTH_SHORT).show();
+                    // redirect to home page
+                    NavHostFragment.findNavController(this).navigate(R.id.action_cameraFragment_to_homeFragment);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(requireContext(), "Failed to post", Toast.LENGTH_SHORT).show();
+                    Log.e("CameraFragment", "Error posting to feed", e);
+                });
     }
+
+    private String encodeImageToBase64(File imageFile) {
+        try {
+            FileInputStream fileInputStreamReader = new FileInputStream(imageFile);
+            byte[] bytes = new byte[(int) imageFile.length()];
+            fileInputStreamReader.read(bytes);
+            return Base64.encodeToString(bytes, Base64.DEFAULT);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+}
