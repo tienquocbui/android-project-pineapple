@@ -55,8 +55,8 @@ public class ProfileFragment extends Fragment {
         deleteAccountButton = view.findViewById(R.id.delete_account_button);
 
         // Set up click listeners
-        editEmailButton.setOnClickListener(v -> showEditDisplayNameDialog());
-        editEmailButton.setText("Change Display Name");
+        editEmailButton.setOnClickListener(v -> showEditUsernameDialog());
+        editEmailButton.setText("Change Username");
         changePasswordButton.setOnClickListener(v -> showChangePasswordDialog());
         logoutButton.setOnClickListener(v -> logout());
         deleteAccountButton.setOnClickListener(v -> showDeleteAccountDialog());
@@ -218,12 +218,12 @@ public class ProfileFragment extends Fragment {
         requireActivity().finish();
     }
 
-    private void showEditDisplayNameDialog() {
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_display_name, null);
-        EditText newDisplayNameInput = dialogView.findViewById(R.id.new_display_name_input);
+    private void showEditUsernameDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_username, null);
+        EditText newUsernameInput = dialogView.findViewById(R.id.new_username_input);
 
         MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Change Display Name")
+                .setTitle("Change Username")
                 .setView(dialogView)
                 .setPositiveButton("Update", null)
                 .setNegativeButton("Cancel", null);
@@ -232,33 +232,45 @@ public class ProfileFragment extends Fragment {
         dialog.setOnShowListener(dialogInterface -> {
             Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             positiveButton.setOnClickListener(v -> {
-                String newDisplayName = newDisplayNameInput.getText().toString().trim();
+                String newUsername = newUsernameInput.getText().toString().trim();
                 
-                if (newDisplayName.isEmpty()) {
-                    Toast.makeText(requireContext(), "Please enter a display name", 
+                if (newUsername.isEmpty()) {
+                    Toast.makeText(requireContext(), "Please enter a username", 
                         Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                if (newDisplayName.length() > 30) {
-                    Toast.makeText(requireContext(), "Display name cannot be longer than 30 characters", 
+                if (newUsername.length() > 30) {
+                    Toast.makeText(requireContext(), "Username cannot be longer than 30 characters", 
                         Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                // Validate display name format
-                if (!isValidDisplayName(newDisplayName)) {
+                if (newUsername.contains(" ")) {
+                    Toast.makeText(requireContext(), "Username cannot contain spaces", 
+                        Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (!newUsername.matches("^[a-zA-Z0-9._]+$")) {
                     Toast.makeText(requireContext(), 
-                        "Display name can only contain letters, numbers, spaces, and basic punctuation", 
+                        "Username can only contain letters, numbers, periods, and underscores", 
+                        Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (newUsername.startsWith(".") || newUsername.endsWith(".")) {
+                    Toast.makeText(requireContext(), 
+                        "Username cannot start or end with a period", 
                         Toast.LENGTH_SHORT).show();
                     return;
                 }
 
                 // Show loading state
                 positiveButton.setEnabled(false);
-                newDisplayNameInput.setEnabled(false);
+                newUsernameInput.setEnabled(false);
                 
-                viewModel.updateDisplayName(newDisplayName);
+                viewModel.updateDisplayName(newUsername);
                 
                 // Observe the result
                 viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
@@ -270,7 +282,7 @@ public class ProfileFragment extends Fragment {
                         
                         // Re-enable inputs
                         positiveButton.setEnabled(true);
-                        newDisplayNameInput.setEnabled(true);
+                        newUsernameInput.setEnabled(true);
                     }
                 });
             });

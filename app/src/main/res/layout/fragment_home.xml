@@ -35,10 +35,9 @@
             android:src="@drawable/ic_profile" />
 
         <TextView
-            android:id="@+id/Profile"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Kelvin"
+            android:id="@+id/usernameText"
             android:textColor="#FFFFFF"
             android:textSize="16sp"
             android:layout_marginStart="10dp" />
