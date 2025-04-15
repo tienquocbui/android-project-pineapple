@@ -9,7 +9,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
         <!-- Profile Header Section -->
         <LinearLayout
@@ -36,7 +37,8 @@
                 android:textColor="@color/white"
                 android:textSize="24sp"
                 android:textStyle="bold"
-                android:fontFamily="sans-serif-medium"/>
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"/>
 
             <TextView
                 android:id="@+id/username"
@@ -45,7 +47,8 @@
                 android:layout_marginTop="4dp"
                 android:textColor="@color/text_secondary"
                 android:textSize="16sp"
-                android:fontFamily="sans-serif"/>
+                android:fontFamily="sans-serif"
+                android:gravity="center"/>
 
         </LinearLayout>
 
@@ -55,14 +58,16 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@color/card_background"
-            android:layout_marginTop="16dp">
+            android:layout_marginTop="16dp"
+            android:layout_marginHorizontal="16dp">
 
             <!-- Email Section -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="16dp"
+                android:gravity="center">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -70,7 +75,8 @@
                     android:text="Email"
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp"
-                    android:fontFamily="sans-serif-medium"/>
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"/>
 
                 <TextView
                     android:id="@+id/email_text"
@@ -79,11 +85,12 @@
                     android:layout_marginTop="4dp"
                     android:textColor="@color/white"
                     android:textSize="16sp"
-                    android:fontFamily="sans-serif"/>
+                    android:fontFamily="sans-serif"
+                    android:gravity="center"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/edit_email_button"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:text="Change Email"
@@ -102,11 +109,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="16dp"
+                android:gravity="center">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/change_password_button"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Change Password"
                     android:textColor="@color/accent"
@@ -123,12 +131,14 @@
             android:orientation="vertical"
             android:background="@color/card_background"
             android:layout_marginTop="16dp"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="24dp"
+            android:layout_marginHorizontal="16dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/logout_button"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:text="Sign Out"
                 android:textColor="@color/accent"
                 style="@style/Widget.MaterialComponents.Button.TextButton"/>
@@ -140,8 +150,9 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/delete_account_button"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:text="Delete Account"
                 android:textColor="@color/error"
                 style="@style/Widget.MaterialComponents.Button.TextButton"/>
