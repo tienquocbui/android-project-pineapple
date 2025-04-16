@@ -9,16 +9,20 @@ public class FeedItem {
     private String imageUrl;
     private Timestamp timestamp;
     private int likes;
+    private String profilePictureUrl;
+    private String username;
 
     // Required empty constructor for Firestore
     public FeedItem() {}
 
-    public FeedItem(String userId,  String content, String imageUrl) {
+    public FeedItem(String userId, String content, String imageUrl, String profilePictureUrl, String username) {
         this.userId = userId;
         this.content = content;
         this.imageUrl = imageUrl;
         this.timestamp = Timestamp.now();
         this.likes = 0;
+        this.profilePictureUrl = profilePictureUrl;
+        this.username = username;
     }
 
     // Getters and setters
@@ -40,8 +44,19 @@ public class FeedItem {
     public int getLikes() { return likes; }
     public void setLikes(int likes) { this.likes = likes; }
 
-    public byte[] getProfilePictureUrl() {
-        return new byte[0];
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
     }
-
+    
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
+    }
+    
+    public String getUsername() {
+        return username;
+    }
+    
+    public void setUsername(String username) {
+        this.username = username;
+    }
 }

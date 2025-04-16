@@ -245,64 +245,105 @@ public class CameraFragment extends Fragment {
         CloudinaryManager.uploadImage(Uri.fromFile(capturedImageFile), new UploadCallback() {
             @Override
             public void onStart(String requestId) {
+                // Show loading indicator or message
+                Toast.makeText(requireContext(), "Uploading image...", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onProgress(String requestId, long bytes, long totalBytes) {
+                // Update progress if needed
             }
 
             @Override
             public void onSuccess(String requestId, Map resultData) {
-                String imageUrl = resultData.get("secure_url").toString();
+                String imageUrl = (String) resultData.get("url");
                 savePostToFirestore(imageUrl, caption);
             }
 
             @Override
             public void onError(String requestId, ErrorInfo error) {
-                Toast.makeText(requireContext(), "Failed to upload image: " + error.getDescription(), Toast.LENGTH_SHORT).show();
                 postButton.setEnabled(true);
                 postButton.setText("Post");
+                Toast.makeText(requireContext(), "Error uploading image: " + error.getDescription(), Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onReschedule(String requestId, ErrorInfo error) {
-                // Handle rescheduling if needed
+                Toast.makeText(requireContext(), "Upload rescheduled", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void savePostToFirestore(String imageUrl, String content) {
-        String userId = FirebaseAuth.getInstance().getCurrentUser() != null
-                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                : "anonymous";
-
-        FeedItem post = new FeedItem(userId, content, imageUrl);
-
-        FirebaseFirestore.getInstance()
-                .collection("posts")
-                .add(post)
-                .addOnSuccessListener(documentReference -> {
-                    Toast.makeText(requireContext(), "Post uploaded!", Toast.LENGTH_SHORT).show();
-
-                    // Reset UI
-                    capturedImageFile = null;
-                    postButton.setVisibility(View.GONE);
-                    captionInput.setVisibility(View.GONE);
-                    capturedImageView.setVisibility(View.GONE);
-                    previewView.setVisibility(View.VISIBLE);
-                    captionInput.setText("");
+        // Get current user
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        
+        // Get user profile data
+        FirebaseFirestore.getInstance().collection("users").document(userId)
+            .get()
+            .addOnSuccessListener(documentSnapshot -> {
+                if (documentSnapshot.exists()) {
+                    String profilePictureUrl = documentSnapshot.getString("profilePictureUrl");
+                    String username = documentSnapshot.getString("username");
+                    
+                    if (profilePictureUrl == null) {
+                        profilePictureUrl = ""; // Default empty string if no profile picture
+                    }
+                    
+                    if (username == null) {
+                        username = "Anonymous"; // Default username if not set
+                    }
+                    
+                    // Create FeedItem
+                    FeedItem post = new FeedItem(userId, content, imageUrl, profilePictureUrl, username);
+                    
+                    // Save to Firestore
+                    FirebaseFirestore.getInstance().collection("posts")
+                        .add(post)
+                        .addOnSuccessListener(documentReference -> {
+                            Toast.makeText(requireContext(), "Post uploaded successfully!", Toast.LENGTH_SHORT).show();
+                            
+                            // Reset UI
+                            capturedImageFile = null;
+                            captionInput.setText("");
+                            postButton.setEnabled(true);
+                            postButton.setText("Post");
+                            
+                            // Hide post UI
+                            postButton.setVisibility(View.GONE);
+                            captionInput.setVisibility(View.GONE);
+                            capturedImageView.setVisibility(View.GONE);
+                            previewView.setVisibility(View.VISIBLE);
+                            
+                            // Restart camera
+                            startCamera();
+                            
+                            // Navigate back to HomeFragment
+                            try {
+                                NavHostFragment.findNavController(this)
+                                    .navigate(R.id.action_cameraFragment_to_homeFragment);
+                            } catch (Exception e) {
+                                // Fallback if navigation action doesn't exist
+                                requireActivity().onBackPressed();
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            postButton.setEnabled(true);
+                            postButton.setText("Post");
+                            Toast.makeText(requireContext(), "Error saving post: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
+                } else {
+                    // User document doesn't exist
+                    Toast.makeText(requireContext(), "Error: User profile not found", Toast.LENGTH_SHORT).show();
                     postButton.setEnabled(true);
                     postButton.setText("Post");
-
-                    // Navigate to home fragment
-                    NavHostFragment.findNavController(CameraFragment.this)
-                            .navigate(R.id.action_cameraFragment_to_homeFragment);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(), "Failed to post: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    postButton.setEnabled(true);
-                    postButton.setText("Post");
-                });
+                }
+            })
+            .addOnFailureListener(e -> {
+                postButton.setEnabled(true);
+                postButton.setText("Post");
+                Toast.makeText(requireContext(), "Error fetching user profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
     }
 
 

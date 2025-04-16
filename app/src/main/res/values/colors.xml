@@ -24,6 +24,7 @@
 
     <color name="card_background">#1C1C1E</color>
     <color name="text_secondary">#8E8E93</color>
+    <color name="secondary_text">#8E8E93</color>
     <color name="accent">#007AFF</color>
     <color name="error">#FF3B30</color>
     <color name="divider">#38383A</color>
