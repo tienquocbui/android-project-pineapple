@@ -15,6 +15,11 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "CLOUDINARY_CLOUD_NAME", project.findProperty("CLOUDINARY_CLOUD_NAME") ?: ""
+        buildConfigField "String", "CLOUDINARY_API_KEY", project.findProperty("CLOUDINARY_API_KEY") ?: ""
+        buildConfigField "String", "CLOUDINARY_API_SECRET", project.findProperty("CLOUDINARY_API_SECRET") ?: ""
+
+
     }
 
     buildTypes {
@@ -28,6 +33,7 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     buildFeatures {
+        buildConfig true
         viewBinding true
     }
 }
@@ -56,6 +62,7 @@ dependencies {
 //    implementation libs.firebase.inappmessaging
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
+    implementation("com.cloudinary:cloudinary-android:3.0.2")
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
