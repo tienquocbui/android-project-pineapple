@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.pineapple.capture.R;
 import com.pineapple.capture.activities.LoginActivity;
@@ -32,10 +33,6 @@ public class ProfileFragment extends Fragment {
     private ImageView profileImage;
     private TextView displayNameText;
     private TextView usernameText;
-    private Button editEmailButton;
-    private Button changePasswordButton;
-    private Button logoutButton;
-    private Button deleteAccountButton;
     private ImageButton editDisplayNameButton;
 
     @Nullable
@@ -52,18 +49,11 @@ public class ProfileFragment extends Fragment {
         displayNameText = view.findViewById(R.id.display_name);
         usernameText = view.findViewById(R.id.username);
         editDisplayNameButton = view.findViewById(R.id.edit_display_name_button);
-        editEmailButton = view.findViewById(R.id.edit_email_button);
-        changePasswordButton = view.findViewById(R.id.change_password_button);
-        logoutButton = view.findViewById(R.id.logout_button);
-        deleteAccountButton = view.findViewById(R.id.delete_account_button);
+        ImageButton settingsButton = view.findViewById(R.id.settings_button);
 
         // Set up click listeners
         editDisplayNameButton.setOnClickListener(v -> showEditDisplayNameDialog());
-        editEmailButton.setOnClickListener(v -> showEditUsernameDialog());
-        editEmailButton.setText("Change Username");
-        changePasswordButton.setOnClickListener(v -> showChangePasswordDialog());
-        logoutButton.setOnClickListener(v -> logout());
-        deleteAccountButton.setOnClickListener(v -> showDeleteAccountDialog());
+        settingsButton.setOnClickListener(v -> showAccountSettingsBottomSheet());
 
         // Observe user data
         viewModel.getUserData().observe(getViewLifecycleOwner(), user -> {
@@ -347,5 +337,34 @@ public class ProfileFragment extends Fragment {
     private boolean isValidDisplayName(String displayName) {
         // Only allow letters, numbers, spaces, and basic punctuation
         return displayName.matches("^[a-zA-Z0-9\\s.,!?-]+$");
+    }
+
+    private void showAccountSettingsBottomSheet() {
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
+        View sheetView = getLayoutInflater().inflate(R.layout.bottom_sheet_account_settings, null);
+        bottomSheetDialog.setContentView(sheetView);
+
+        sheetView.findViewById(R.id.action_change_username).setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            showEditUsernameDialog();
+        });
+        sheetView.findViewById(R.id.action_change_display_name).setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            showEditDisplayNameDialog();
+        });
+        sheetView.findViewById(R.id.action_change_password).setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            showChangePasswordDialog();
+        });
+        sheetView.findViewById(R.id.action_logout).setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            logout();
+        });
+        sheetView.findViewById(R.id.action_delete_account).setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            showDeleteAccountDialog();
+        });
+
+        bottomSheetDialog.show();
     }
 }
