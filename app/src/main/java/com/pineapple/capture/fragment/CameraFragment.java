@@ -256,7 +256,9 @@ public class CameraFragment extends Fragment {
 
             @Override
             public void onSuccess(String requestId, Map resultData) {
-                String imageUrl = (String) resultData.get("url");
+                // Use the new helper method to get a clean image URL
+                String imageUrl = CloudinaryManager.getImageUrl(resultData);
+                Log.d("CameraFragment", "Cloudinary upload successful, image URL: " + imageUrl);
                 savePostToFirestore(imageUrl, caption);
             }
 

@@ -1,6 +1,7 @@
 package com.pineapple.capture.fragment;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,14 +67,15 @@ public class HomeFragment extends Fragment {
         
         // Set up SwipeRefreshLayout
         swipeRefreshLayout = root.findViewById(R.id.swipe_refresh_layout);
-        swipeRefreshLayout.setOnRefreshListener(this::loadFeedPosts);
-        
-        // Set colors for the refresh animation
-        swipeRefreshLayout.setColorSchemeResources(
-            R.color.primary_blue,
-            R.color.accent,
-            R.color.primary_text
-        );
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setOnRefreshListener(() -> loadFeedPosts());
+            
+            // Set colors for the refresh animation
+            swipeRefreshLayout.setColorSchemeResources(
+                R.color.primary_blue,
+                R.color.accent
+            );
+        }
 
         // Load feed posts
         loadFeedPosts();
@@ -82,13 +84,17 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadFeedPosts() {
-        swipeRefreshLayout.setRefreshing(true);
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setRefreshing(true);
+        }
         
         FirebaseFirestore.getInstance()
                 .collection("posts")
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
-                    swipeRefreshLayout.setRefreshing(false);
+                    if (swipeRefreshLayout != null) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                     
                     if (error != null) {
                         Toast.makeText(requireContext(), "Error loading posts: " + error.getMessage(), Toast.LENGTH_SHORT).show();
@@ -103,11 +109,11 @@ public class HomeFragment extends Fragment {
                             feedItems.add(post);
                         }
                         
-                        if (feedItems.isEmpty()) {
+                        if (feedItems.isEmpty() && binding != null) {
                             // Show empty state view
                             binding.emptyStateLayout.setVisibility(View.VISIBLE);
                             feedRecyclerView.setVisibility(View.GONE);
-                        } else {
+                        } else if (binding != null) {
                             // Show the posts
                             binding.emptyStateLayout.setVisibility(View.GONE);
                             feedRecyclerView.setVisibility(View.VISIBLE);
@@ -210,15 +216,31 @@ public class HomeFragment extends Fragment {
 
                 // Load post image with rounded corners
                 if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
-                    RequestOptions requestOptions = new RequestOptions();
-                    requestOptions = requestOptions.transforms(new CenterCrop(), new RoundedCorners(16));
-                    
-                    Glide.with(itemView.getContext())
-                            .load(post.getImageUrl())
-                            .apply(requestOptions)
-                            .placeholder(R.drawable.placeholder_image)
-                            .error(R.drawable.error_image)
-                            .into(postImage);
+                    try {
+                        RequestOptions requestOptions = new RequestOptions()
+                                .transforms(new CenterCrop(), new RoundedCorners(16))
+                                .placeholder(R.drawable.placeholder_image)
+                                .error(R.drawable.error_image);
+                        
+                        String imageUrl = post.getImageUrl().trim();
+                        Log.d("HomeFragment", "Loading image: " + imageUrl);
+                        
+                        // Ensure URL starts with http or https
+                        if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
+                            imageUrl = "https://" + imageUrl;
+                        }
+                        
+                        Glide.with(itemView.getContext())
+                                .load(imageUrl)
+                                .apply(requestOptions)
+                                .into(postImage);
+                    } catch (Exception e) {
+                        Log.e("HomeFragment", "Error loading image: " + e.getMessage());
+                        // Show error image on failure
+                        Glide.with(itemView.getContext())
+                                .load(R.drawable.error_image)
+                                .into(postImage);
+                    }
                 } else {
                     postImage.setVisibility(View.GONE);
                 }
