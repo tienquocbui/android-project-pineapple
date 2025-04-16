@@ -59,7 +59,7 @@
                     android:background="@android:color/transparent"
                     android:src="@drawable/ic_edit"
                     android:contentDescription="Edit Display Name"
-                    android:tint="@color/accent"
+                    app:tint="@color/accent"
                     android:layout_marginStart="8dp" />
             </LinearLayout>
 
@@ -84,7 +84,7 @@
         android:background="@android:color/transparent"
         android:src="@drawable/ic_settings"
         android:contentDescription="Settings"
-        android:tint="@color/white"
+        app:tint="@color/white"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="60dp"
