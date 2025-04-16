@@ -2,18 +2,20 @@ package com.pineapple.capture.models;
 
 import com.google.firebase.firestore.Exclude;
 
+import java.util.List;
+
 public class User {
     private String id;
     private String username;
     private String email;
-    private String profilePictureUrl;
+    private List<String> profilePictureUrl;
     private String displayName;
 
     public User() {
         // Required empty constructor for Firestore
     }
 
-    public User(String id, String username, String email, String profilePictureUrl, String displayName) {
+    public User(String id, String username, String email, List<String> profilePictureUrl, String displayName) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -46,11 +48,11 @@ public class User {
         this.email = email;
     }
 
-    public String getProfilePictureUrl() {
+    public List<String> getProfilePictureUrl() {
         return profilePictureUrl;
     }
 
-    public void setProfilePictureUrl(String profilePictureUrl) {
+    public void setProfilePictureUrl(List<String> profilePictureUrl) {
         this.profilePictureUrl = profilePictureUrl;
     }
 
@@ -61,4 +63,4 @@ public class User {
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
-} 
+}
