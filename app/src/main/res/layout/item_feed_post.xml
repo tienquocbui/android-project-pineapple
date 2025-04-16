@@ -63,7 +63,7 @@
                 android:src="@drawable/ic_more"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="More options"
-                android:tint="@color/white"/>
+                app:tint="@color/white"/>
         </LinearLayout>
 
         <!-- Post Image - removing its own corner radius since the CardView handles it -->
@@ -96,7 +96,7 @@
                     android:layout_height="32dp"
                     android:src="@drawable/ic_favorite_border"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:tint="@color/white"
+                    app:tint="@color/white"
                     android:contentDescription="Like"/>
 
                 <ImageButton
@@ -106,7 +106,7 @@
                     android:layout_marginStart="16dp"
                     android:src="@drawable/ic_comment"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:tint="@color/white"
+                    app:tint="@color/white"
                     android:contentDescription="Comment"/>
 
                 <ImageButton
@@ -116,7 +116,7 @@
                     android:layout_marginStart="16dp"
                     android:src="@drawable/ic_share"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:tint="@color/white"
+                    app:tint="@color/white"
                     android:contentDescription="Share"/>
             </LinearLayout>
 

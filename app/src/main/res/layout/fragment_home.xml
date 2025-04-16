@@ -11,9 +11,10 @@
     <View
         android:id="@+id/safe_area_top"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHeight_min="36dp" />
+        app:layout_constraintHeight_min="36dp"
+        android:visibility="gone"/>
 
     <!-- Title Bar -->
     <androidx.appcompat.widget.Toolbar
@@ -46,34 +47,13 @@
         android:background="@color/divider"
         app:layout_constraintTop_toBottomOf="@id/toolbar" />
 
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh_layout"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar_divider">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/feed_recycler_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingTop="12dp"
-            android:paddingBottom="24dp"
-            android:paddingHorizontal="8dp"
-            android:overScrollMode="never" />
-
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
     <!-- Empty state layout -->
     <LinearLayout
         android:id="@+id/empty_state_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:gravity="center"
+        android:orientation="vertical"
         android:padding="32dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -85,32 +65,59 @@
         <ImageView
             android:layout_width="120dp"
             android:layout_height="120dp"
-            android:src="@drawable/ic_empty_feed"
             android:alpha="0.8"
-            android:contentDescription="Empty feed icon" />
+            android:contentDescription="Empty feed icon"
+            android:src="@drawable/ic_empty_feed" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif-medium"
             android:text="No posts yet"
             android:textColor="@color/white"
             android:textSize="20sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium" />
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Take a picture or follow friends to see posts in your feed"
-            android:textColor="@color/system_gray"
-            android:textSize="16sp"
-            android:textAlignment="center"
+            android:fontFamily="sans-serif"
             android:lineSpacingExtra="4dp"
-            android:fontFamily="sans-serif" />
-
+            android:text="Take a picture or follow friends to see posts in your feed"
+            android:textAlignment="center"
+            android:textColor="@color/system_gray"
+            android:textSize="16sp" />
     </LinearLayout>
+
+        <!-- Feed layout -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_layout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="visible"
+        tools:visibility="visible"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/feed_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:paddingHorizontal="8dp"
+            android:paddingTop="12dp"
+            android:backgroundTint="@color/accent"
+            android:paddingBottom="90dp"
+            android:visibility="visible" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+
     
     <!-- Test Controls for Debug Purposes -->
     <LinearLayout
