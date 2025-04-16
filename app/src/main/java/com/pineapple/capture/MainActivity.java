@@ -51,28 +51,47 @@ public class MainActivity extends AppCompatActivity {
 
         // Set up bottom navigation
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
-
             if (item.getItemId() == R.id.navigation_home) {
-                selectedFragment = new HomeFragment();
+                loadFragment(new HomeFragment());
+                return true;
             } else if (item.getItemId() == R.id.navigation_camera) {
-                selectedFragment = new CameraFragment();
+                loadFragment(new CameraFragment());
+                return true;
             } else if (item.getItemId() == R.id.navigation_profile) {
-                selectedFragment = new ProfileFragment();
-            }
-
-            if (selectedFragment != null) {
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, selectedFragment)
-                        .commit();
+                loadFragment(new ProfileFragment());
                 return true;
             }
-
             return false;
         });
 
-        // Start with camera fragment
-        binding.bottomNavigation.setSelectedItemId(R.id.navigation_camera);
+        // Start with home fragment if this is a fresh start
+        if (savedInstanceState == null) {
+            loadFragment(new HomeFragment());
+            binding.bottomNavigation.setSelectedItemId(R.id.navigation_home);
+        }
+    }
+
+    // Helper method to load fragments
+    private void loadFragment(Fragment fragment) {
+        getSupportFragmentManager()
+            .beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .commit();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        // Always refresh the HomeFragment when returning to the app
+        if (binding.bottomNavigation.getSelectedItemId() == R.id.navigation_home) {
+            HomeFragment homeFragment = (HomeFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.fragment_container);
+            
+            if (homeFragment != null) {
+                homeFragment.loadFeedPosts();
+            }
+        }
     }
 
     @Override
