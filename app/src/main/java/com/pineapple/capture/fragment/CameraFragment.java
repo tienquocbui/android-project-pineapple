@@ -29,31 +29,31 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.fragment.NavHostFragment;
-//import androidx.navigation.fragment.NavHostFragment;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.pineapple.capture.MainActivity;
 import com.pineapple.capture.R;
 import com.pineapple.capture.feed.FeedItem;
 import com.pineapple.capture.utils.CloudinaryManager;
 import com.cloudinary.android.callback.UploadCallback;
 import com.cloudinary.android.callback.ErrorInfo;
 
-//import com.pineapple.capture.feed.FeedItem;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.Map;
-import java.util.HashMap;
 
 public class CameraFragment extends Fragment {
 
@@ -428,20 +428,23 @@ public class CameraFragment extends Fragment {
         cancelButton.setEnabled(true);
         postButton.setText("Post");
         
-        // Tell MainActivity to go back to the home tab with the new post
+        // Return to the home tab with the new post
         Log.d("CameraFragment", "Post successful, returning to home tab");
         if (getActivity() != null) {
-            // Switch to home tab
             try {
-                ((MainActivity) getActivity()).getSupportFragmentManager()
-                    .beginTransaction()
+                // 1. Load the HomeFragment
+                FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+                fragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, new HomeFragment())
                     .commit();
                     
-                // Select home tab in the bottom navigation
-                ((MainActivity) getActivity()).findViewById(R.id.navigation_home).performClick();
+                // 2. Select the home tab in the bottom navigation
+                BottomNavigationView bottomNav = getActivity().findViewById(R.id.bottomNavigation);
+                if (bottomNav != null) {
+                    bottomNav.setSelectedItemId(R.id.navigation_home);
+                }
             } catch (Exception e) {
-                Log.e("CameraFragment", "Error navigating back to home tab: " + e.getMessage());
+                Log.e("CameraFragment", "Error navigating back to home tab: " + e.getMessage(), e);
                 // Just finish as fallback
                 getActivity().finish();
             }

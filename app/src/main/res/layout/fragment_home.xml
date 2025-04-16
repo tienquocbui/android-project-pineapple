@@ -111,5 +111,37 @@
             android:fontFamily="sans-serif" />
 
     </LinearLayout>
+    
+    <!-- Test Controls for Debug Purposes -->
+    <LinearLayout
+        android:id="@+id/test_controls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent">
+        
+        <Button
+            android:id="@+id/create_test_post_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="Create Test Post"
+            android:backgroundTint="@color/primary_blue"
+            android:textColor="@color/white" />
+            
+        <Button
+            android:id="@+id/clear_all_posts_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:text="Clear All Posts"
+            android:backgroundTint="#E53935"
+            android:textColor="@color/white" />
+            
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
