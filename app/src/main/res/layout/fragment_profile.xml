@@ -10,47 +10,58 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="center_horizontal">
+        android:gravity="center_horizontal"
+        android:padding="24dp">
 
-        <!-- Profile Header Section -->
+        <!-- Profile Image -->
+        <ImageView
+            android:id="@+id/profile_image"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginTop="24dp"
+            android:src="@drawable/ic_profile"
+            android:background="@drawable/circle_background"
+            android:scaleType="centerCrop" />
+
+        <!-- Display Name with Edit Icon -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="24dp">
-
-            <ImageView
-                android:id="@+id/profile_image"
-                android:layout_width="120dp"
-                android:layout_height="120dp"
-                android:src="@drawable/default_profile"
-                android:scaleType="centerCrop"
-                android:background="@drawable/circle_background"
-                android:padding="4dp"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="18dp">
 
             <TextView
                 android:id="@+id/display_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:text="Display Name"
                 android:textColor="@color/white"
-                android:textSize="24sp"
+                android:textSize="26sp"
                 android:textStyle="bold"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="center"/>
+                android:fontFamily="sans-serif-medium" />
 
-            <TextView
-                android:id="@+id/username"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/text_secondary"
-                android:textSize="16sp"
-                android:fontFamily="sans-serif"
-                android:gravity="center"/>
-
+            <ImageButton
+                android:id="@+id/edit_display_name_button"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_edit"
+                android:contentDescription="Edit Display Name"
+                android:tint="@color/accent"
+                android:layout_marginStart="8dp" />
         </LinearLayout>
+
+        <!-- Username -->
+        <TextView
+            android:id="@+id/username"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@username"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:fontFamily="sans-serif"
+            android:layout_marginTop="4dp" />
 
         <!-- Settings Section -->
         <LinearLayout

@@ -243,6 +243,28 @@ public class ProfileViewModel extends ViewModel {
             });
     }
 
+    public void updateDisplayNameOnly(String newDisplayName) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            errorMessage.setValue("No user is currently signed in");
+            return;
+        }
+
+        db.collection("users").document(user.getUid())
+            .update("displayName", newDisplayName)
+            .addOnSuccessListener(aVoid -> {
+                User currentUser = userData.getValue();
+                if (currentUser != null) {
+                    currentUser.setDisplayName(newDisplayName);
+                    userData.setValue(currentUser);
+                }
+                errorMessage.setValue("Display name updated successfully");
+            })
+            .addOnFailureListener(e -> {
+                errorMessage.setValue("Failed to update display name: " + e.getMessage());
+            });
+    }
+
     private boolean isValidUsername(String username) {
         // Check length
         if (username.length() < 1 || username.length() > 30) {

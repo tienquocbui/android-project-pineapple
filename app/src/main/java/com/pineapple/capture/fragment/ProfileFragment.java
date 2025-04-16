@@ -10,6 +10,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -35,6 +36,7 @@ public class ProfileFragment extends Fragment {
     private Button changePasswordButton;
     private Button logoutButton;
     private Button deleteAccountButton;
+    private ImageButton editDisplayNameButton;
 
     @Nullable
     @Override
@@ -49,12 +51,14 @@ public class ProfileFragment extends Fragment {
         profileImage = view.findViewById(R.id.profile_image);
         displayNameText = view.findViewById(R.id.display_name);
         usernameText = view.findViewById(R.id.username);
+        editDisplayNameButton = view.findViewById(R.id.edit_display_name_button);
         editEmailButton = view.findViewById(R.id.edit_email_button);
         changePasswordButton = view.findViewById(R.id.change_password_button);
         logoutButton = view.findViewById(R.id.logout_button);
         deleteAccountButton = view.findViewById(R.id.delete_account_button);
 
         // Set up click listeners
+        editDisplayNameButton.setOnClickListener(v -> showEditDisplayNameDialog());
         editEmailButton.setOnClickListener(v -> showEditUsernameDialog());
         editEmailButton.setText("Change Username");
         changePasswordButton.setOnClickListener(v -> showChangePasswordDialog());
@@ -62,7 +66,20 @@ public class ProfileFragment extends Fragment {
         deleteAccountButton.setOnClickListener(v -> showDeleteAccountDialog());
 
         // Observe user data
-        viewModel.getUserData().observe(getViewLifecycleOwner(), this::updateUI);
+        viewModel.getUserData().observe(getViewLifecycleOwner(), user -> {
+            if (user != null) {
+                displayNameText.setText(user.getDisplayName());
+                usernameText.setText("@" + user.getUsername());
+                
+                // Load profile image using Glide
+                if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
+                    Glide.with(this)
+                            .load(user.getProfilePictureUrl())
+                            .circleCrop()
+                            .into(profileImage);
+                }
+            }
+        });
         
         // Observe error messages
         viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
@@ -74,19 +91,55 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
-    private void updateUI(User user) {
-        if (user != null) {
-            displayNameText.setText(user.getDisplayName());
-            usernameText.setText(user.getUsername());
-            
-            // Load profile image using Glide
-            if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
-                Glide.with(this)
-                        .load(user.getProfilePictureUrl())
-                        .circleCrop()
-                        .into(profileImage);
-            }
-        }
+    private void showEditDisplayNameDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_display_name, null);
+        EditText newDisplayNameInput = dialogView.findViewById(R.id.new_display_name_input);
+
+        MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Edit Display Name")
+                .setView(dialogView)
+                .setPositiveButton("Update", null)
+                .setNegativeButton("Cancel", null);
+
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                String newDisplayName = newDisplayNameInput.getText().toString().trim();
+
+                if (newDisplayName.isEmpty()) {
+                    Toast.makeText(requireContext(), "Display name cannot be empty", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (newDisplayName.length() > 30) {
+                    Toast.makeText(requireContext(), "Display name cannot be longer than 30 characters", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                // Allow letters, numbers, spaces, and basic punctuation
+                if (!newDisplayName.matches("^[a-zA-Z0-9 .,'!?-]+$")) {
+                    Toast.makeText(requireContext(), "Display name can only contain letters, numbers, spaces, and basic punctuation", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Show loading state
+                positiveButton.setEnabled(false);
+                newDisplayNameInput.setEnabled(false);
+
+                viewModel.updateDisplayNameOnly(newDisplayName);
+
+                viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+                    if (message != null && !message.isEmpty()) {
+                        if (message.contains("successfully")) {
+                            dialog.dismiss();
+                        }
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        positiveButton.setEnabled(true);
+                        newDisplayNameInput.setEnabled(true);
+                    }
+                });
+            });
+        });
+        dialog.show();
     }
 
     private void showEditEmailDialog() {

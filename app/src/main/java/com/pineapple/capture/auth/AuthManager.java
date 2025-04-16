@@ -34,8 +34,50 @@ public class AuthManager {
         return instance;
     }
 
-    public Task<AuthResult> signup(String displayName, String email, String password) {
-        return signUp(email, password, displayName);
+    // Callback interface for username uniqueness
+    public interface UsernameUniqueCallback {
+        void onResult(boolean isUnique);
+    }
+
+    // Check if username is unique in Firestore
+    public void isUsernameUnique(String username, UsernameUniqueCallback callback) {
+        db.collection(USERS_COLLECTION)
+            .whereEqualTo("username", username)
+            .get()
+            .addOnSuccessListener(queryDocumentSnapshots -> {
+                callback.onResult(queryDocumentSnapshots.isEmpty());
+            })
+            .addOnFailureListener(e -> {
+                // On failure, treat as not unique to be safe
+                callback.onResult(false);
+            });
+    }
+
+    // Updated signup to accept username
+    public Task<AuthResult> signup(String displayName, String username, String email, String password) {
+        return auth.createUserWithEmailAndPassword(email, password)
+                .addOnSuccessListener(authResult -> {
+                    FirebaseUser firebaseUser = authResult.getUser();
+                    if (firebaseUser != null) {
+                        // Update display name in Firebase Auth
+                        UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                                .setDisplayName(displayName)
+                                .build();
+                        firebaseUser.updateProfile(profileUpdates);
+
+                        // Create user document in Firestore
+                        User user = new User(
+                                firebaseUser.getUid(),
+                                username, // username
+                                email,
+                                null, // No profile picture initially
+                                displayName
+                        );
+                        db.collection(USERS_COLLECTION)
+                                .document(firebaseUser.getUid())
+                                .set(user);
+                    }
+                });
     }
 
     public Task<AuthResult> signUp(String email, String password, String displayName) {

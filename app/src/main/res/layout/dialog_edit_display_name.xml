@@ -9,7 +9,7 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="New Username"
+        android:hint="New Display Name"
         app:counterEnabled="true"
         app:counterMaxLength="30"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
@@ -28,7 +28,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Username can only contain letters, numbers, periods, and underscores"
+        android:text="Display name can include letters, numbers, spaces, and basic punctuation."
         android:textSize="12sp"
         android:textColor="?android:attr/textColorSecondary" />
 
