@@ -11,11 +11,9 @@
         android:id="@+id/previewView"
         android:layout_width="match_parent"
         android:layout_height="370dp"
-        tools:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/capture_button"
         android:layout_gravity="center"/>
-
 
     <ImageView
         android:id="@+id/captured_image_view"
@@ -26,7 +24,6 @@
         app:layout_constraintBottom_toTopOf="@id/capture_button"
         android:scaleType="centerCrop"
         android:layout_gravity="center" />
-
 
     <ImageButton
         android:id="@+id/capture_button"
@@ -61,17 +58,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/capture_button" />
 
+    <!-- Camera mode close button - shown only during camera capture -->
     <Button
-        android:id="@+id/cancel_button"
+        android:id="@+id/close_camera_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:text="Cancel"
+        android:backgroundTint="@color/system_gray4"
+        android:textColor="@color/white"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-
+    <!-- Apple-style caption input - initially hidden, shown after taking a photo -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/caption_layout"
         android:layout_width="0dp"
@@ -79,8 +79,18 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
+        android:visibility="gone"
         android:hint="Add a caption..."
-        app:layout_constraintBottom_toTopOf="@id/post_button"
+        android:textColorHint="@color/system_gray"
+        app:boxBackgroundColor="@color/card_background_elevated"
+        app:boxCornerRadiusBottomEnd="16dp"
+        app:boxCornerRadiusBottomStart="16dp"
+        app:boxCornerRadiusTopEnd="16dp"
+        app:boxCornerRadiusTopStart="16dp"
+        app:boxStrokeWidth="0dp"
+        app:boxStrokeWidthFocused="0dp"
+        app:hintTextColor="@color/primary_blue"
+        app:layout_constraintBottom_toTopOf="@id/button_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -89,22 +99,49 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textMultiLine"
-            android:maxLines="3" />
+            android:maxLines="3"
+            android:padding="16dp"
+            android:textColor="@color/white"
+            android:textSize="16sp" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <Button
-        android:id="@+id/post_button"
+    <!-- Container for post and cancel buttons (horizontally aligned) -->
+    <LinearLayout
+        android:id="@+id/button_container"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="32dp"
-        android:text="Post"
+        android:visibility="gone"
+        android:orientation="horizontal"
+        android:gravity="center"
         app:layout_constraintBottom_toTopOf="@id/capture_button"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
 
+        <Button
+            android:id="@+id/cancel_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Cancel"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/system_gray4" />
+
+        <Button
+            android:id="@+id/post_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Post"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/primary_blue" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 
