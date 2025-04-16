@@ -13,7 +13,7 @@ public class FeedItem {
     // Required empty constructor for Firestore
     public FeedItem() {}
 
-    public FeedItem(String userId, String content, String imageUrl) {
+    public FeedItem(String userId,  String content, String imageUrl) {
         this.userId = userId;
         this.content = content;
         this.imageUrl = imageUrl;
@@ -24,7 +24,7 @@ public class FeedItem {
     // Getters and setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
-    
+
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }
     
@@ -39,4 +39,9 @@ public class FeedItem {
     
     public int getLikes() { return likes; }
     public void setLikes(int likes) { this.likes = likes; }
-} 
+
+    public byte[] getProfilePictureUrl() {
+        return new byte[0];
+    }
+
+}
