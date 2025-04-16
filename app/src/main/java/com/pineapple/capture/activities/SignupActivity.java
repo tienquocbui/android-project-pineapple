@@ -38,27 +38,55 @@ public class SignupActivity extends AppCompatActivity {
         }
 
         String displayName = binding.displayNameEditText.getText().toString().trim();
+        String username = binding.usernameEditText.getText().toString().trim();
         String email = binding.emailEditText.getText().toString().trim();
         String password = binding.passwordEditText.getText().toString().trim();
 
-        if (displayName.isEmpty() || email.isEmpty() || password.isEmpty()) {
+        if (displayName.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // Username validation
+        if (username.length() < 1 || username.length() > 30) {
+            Toast.makeText(this, "Username must be 1-30 characters", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (username.contains(" ")) {
+            Toast.makeText(this, "Username cannot contain spaces", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!username.matches("^[a-zA-Z0-9._]+$")) {
+            Toast.makeText(this, "Username can only contain letters, numbers, periods, and underscores", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (username.startsWith(".") || username.endsWith(".")) {
+            Toast.makeText(this, "Username cannot start or end with a period", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         showLoading(true);
-        authManager.signup(displayName, email, password)
-                .addOnCompleteListener(task -> {
-                    showLoading(false);
-                    if (task.isSuccessful()) {
-                        startMainActivity();
-                    } else {
-                        String error = task.getException() != null ?
-                                task.getException().getMessage() :
-                                "Signup failed";
-                        Toast.makeText(this, error, Toast.LENGTH_LONG).show();
-                    }
-                });
+        // Check username uniqueness in Firestore
+        authManager.isUsernameUnique(username, isUnique -> {
+            if (!isUnique) {
+                showLoading(false);
+                Toast.makeText(this, "Username is already taken", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            // Proceed with signup
+            authManager.signup(displayName, username, email, password)
+                    .addOnCompleteListener(task -> {
+                        showLoading(false);
+                        if (task.isSuccessful()) {
+                            startMainActivity();
+                        } else {
+                            String error = task.getException() != null ?
+                                    task.getException().getMessage() :
+                                    "Signup failed";
+                            Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+                        }
+                    });
+        });
     }
 
     private void startMainActivity() {
