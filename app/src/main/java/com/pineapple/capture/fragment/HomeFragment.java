@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -122,7 +123,8 @@ public class HomeFragment extends Fragment {
         
         Log.d("HomeFragment", "Loading feed posts...");
         swipeRefreshLayout.setRefreshing(true);
-        
+
+
         // First, log the number of posts in the collection for diagnostic purposes
         db.collection("posts").get()
             .addOnSuccessListener(snapshot -> {
@@ -432,6 +434,8 @@ public class HomeFragment extends Fragment {
             private final ImageView postImage;
             private final TextView timestampText;
             private final TextView likesText;
+            private final ImageButton likeButton, commentButton, shareButton;
+
 
             public FeedViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -441,6 +445,9 @@ public class HomeFragment extends Fragment {
                 postImage = itemView.findViewById(R.id.post_image);
                 timestampText = itemView.findViewById(R.id.timestamp_text);
                 likesText = itemView.findViewById(R.id.likes_text);
+                commentButton = itemView.findViewById(R.id.comment_button);
+                shareButton = itemView.findViewById(R.id.share_button);
+                likeButton = itemView.findViewById(R.id.like_button);
             }
 
             public void bind(FeedItem post, SimpleDateFormat dateFormat) {

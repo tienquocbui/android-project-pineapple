@@ -110,9 +110,9 @@ public class AuthManager {
         return auth.signInWithEmailAndPassword(email, password);
     }
 
-    public void logout() {
-        auth.signOut();
-    }
+//    public void logout() {
+//        auth.signOut();
+//    }
 
     public FirebaseUser getCurrentUser() {
         return auth.getCurrentUser();
