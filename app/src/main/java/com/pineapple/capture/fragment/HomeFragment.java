@@ -47,6 +47,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -75,7 +76,6 @@ public class HomeFragment extends Fragment {
         feedRecyclerView = root.findViewById(R.id.feed_recycler_view);
         swipeRefreshLayout = root.findViewById(R.id.swipe_refresh_layout);
         emptyStateLayout = root.findViewById(R.id.empty_state_layout);
-        createTestPostButton = root.findViewById(R.id.create_test_post_button);
         clearAllPostsButton = root.findViewById(R.id.clear_all_posts_button);
 
         // Initialize data
@@ -89,11 +89,6 @@ public class HomeFragment extends Fragment {
         
         // Initialize Firestore
         db = FirebaseFirestore.getInstance();
-        
-        // Setup test post button
-        if (createTestPostButton != null) {
-            createTestPostButton.setOnClickListener(v -> createTestPost());
-        }
         
         // Setup clear all posts button
         if (clearAllPostsButton != null) {
@@ -242,43 +237,6 @@ public class HomeFragment extends Fragment {
         binding = null;
     }
 
-    // Test method to create a post directly
-    private void createTestPost() {
-        if (!isAdded()) return;
-        
-        Toast.makeText(requireContext(), "Creating test post...", Toast.LENGTH_SHORT).show();
-        
-        // Get current user
-        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        
-        // Create test post data
-        Map<String, Object> postData = new HashMap<>();
-        postData.put("userId", userId);
-        postData.put("content", "Test post created at " + new Date().toString());
-        postData.put("imageUrl", "https://picsum.photos/600/400");  // Random image from Lorem Picsum
-        postData.put("timestamp", Timestamp.now());
-        postData.put("likes", 0);
-        postData.put("profilePictureUrl", "");
-        postData.put("username", "TestUser");
-        
-        // Save to Firestore
-        db.collection("posts")
-            .add(postData)
-            .addOnSuccessListener(documentReference -> {
-                String postId = documentReference.getId();
-                Toast.makeText(requireContext(), "Test post created with ID: " + postId, Toast.LENGTH_LONG).show();
-                
-                // Verify post creation
-                checkPostsData(postId);
-                
-                // Reload posts
-                loadFeedPosts();
-            })
-            .addOnFailureListener(e -> {
-                Toast.makeText(requireContext(), "Error creating test post: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                Log.e("HomeFragment", "Error creating test post", e);
-            });
-    }
 
     // Debug method to check Firestore data
     private void checkPostsData(String specificPostId) {
@@ -391,6 +349,51 @@ public class HomeFragment extends Fragment {
             })
             .show();
     }
+
+    private void deletePost(String postId) {
+        swipeRefreshLayout.setRefreshing(true);
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Delete Post")
+                .setMessage("Are you sure you want to delete this post? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    Log.d("HomeFragment", "Deleting...");
+
+                    db.collection("posts")
+                            .document(postId)
+                            .delete()
+                            .addOnSuccessListener(queryDocumentSnapshots -> {
+                                Log.d("HomeFragment", "Successfully deleted post: " + postId);
+                                Toast.makeText(requireContext(), "Post deleted", Toast.LENGTH_SHORT).show();
+                                removePostFromList(postId);
+                                swipeRefreshLayout.setRefreshing(false);
+                                updateEmptyState();
+
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("HomeFragment", "Error getting posts to delete", e);
+                                Toast.makeText(requireContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                swipeRefreshLayout.setRefreshing(false);
+                            });
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    swipeRefreshLayout.setRefreshing(false);
+                })
+                .show();
+    }
+
+    private void removePostFromList(String postId) {
+        Iterator<FeedItem> iterator = feedItems.iterator();
+        while (iterator.hasNext()) {
+            FeedItem item = iterator.next();
+            if (item.getId().equals(postId)) {
+                iterator.remove();
+                feedAdapter.notifyDataSetChanged();
+                break;
+            }
+        }
+    }
+
 
     private static class FeedAdapter extends RecyclerView.Adapter<FeedAdapter.FeedViewHolder> {
         private final List<FeedItem> feedItems;
