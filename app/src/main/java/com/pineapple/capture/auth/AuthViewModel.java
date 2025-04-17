@@ -38,12 +38,11 @@ public class AuthViewModel extends ViewModel {
                 if (document.exists()) {
                     errorMessage.setValue("Username already taken");
                 } else {
-                    // Create new user
                     auth.createUserWithEmailAndPassword(email, password)
                         .addOnSuccessListener(authResult -> {
                             FirebaseUser user = authResult.getUser();
                             if (user != null) {
-                                // Create user profile
+                                // user profile
                                 UserProfile profile = new UserProfile(username, "");
                                 db.collection("users")
                                     .document(user.getUid())
@@ -63,11 +62,6 @@ public class AuthViewModel extends ViewModel {
                 }
             })
             .addOnFailureListener(e -> errorMessage.setValue("Failed to check username availability"));
-    }
-
-    public void signOut() {
-        auth.signOut();
-        authState.setValue(false);
     }
 
     public void resetPassword(String email) {

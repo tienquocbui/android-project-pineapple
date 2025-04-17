@@ -7,7 +7,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.bumptech.glide.Glide;
 import com.pineapple.capture.R;
-import com.pineapple.capture.models.User;
 
 public class ProfileActivity extends AppCompatActivity {
     private ProfileViewModel viewModel;
@@ -34,8 +33,6 @@ public class ProfileActivity extends AppCompatActivity {
                 displayName.setText(user.getDisplayName());
                 userName.setText(user.getUsername());
                 userEmail.setText(user.getEmail());
-                
-                // Load profile image using Glide
                 String profileUrl = user.getPrimaryProfilePictureUrl();
                 if (profileUrl != null && !profileUrl.isEmpty()) {
                     Glide.with(this)

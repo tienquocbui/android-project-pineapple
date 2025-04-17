@@ -28,7 +28,6 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
-import androidx.core.app.ActivityCompat;
 
 import com.bumptech.glide.Glide;
 import com.cloudinary.android.callback.ErrorInfo;
@@ -99,8 +98,6 @@ public class ProfileFragment extends Fragment {
     private ActivityResultLauncher<String> galleryPermissionLauncher;
     
     private Uri photoURI;
-    private static final int CAMERA_PERMISSION_CODE = 100;
-    private static final int STORAGE_PERMISSION_CODE = 101;
 
     @Nullable
     @Override
@@ -168,12 +165,10 @@ public class ProfileFragment extends Fragment {
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK) {
-                    // Reload user data to refresh interests
                     viewModel.loadUserData();
                 }
             });
             
-        // Register activity result launcher for image picker (gallery)
         imagePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -185,21 +180,17 @@ public class ProfileFragment extends Fragment {
                 }
             });
             
-        // Register activity result launcher for camera
         cameraLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK) {
                     if (photoURI != null) {
-                        // Camera intent with file URI was used
                         uploadProfileImage(photoURI);
                     } else if (result.getData() != null && result.getData().getExtras() != null) {
-                        // Basic camera intent was used, which returns a thumbnail bitmap
                         Bundle extras = result.getData().getExtras();
                         Bitmap imageBitmap = (Bitmap) extras.get("data");
                         
                         if (imageBitmap != null) {
-                            // Save bitmap to file and get URI
                             Uri imageUri = saveBitmapToFile(imageBitmap);
                             if (imageUri != null) {
                                 uploadProfileImage(imageUri);
@@ -216,7 +207,6 @@ public class ProfileFragment extends Fragment {
             new ActivityResultContracts.RequestPermission(),
             isGranted -> {
                 if (isGranted) {
-                    // Camera permission granted
                     openCamera();
                 } else {
                     Toast.makeText(requireContext(), "Camera permission denied", Toast.LENGTH_SHORT).show();
@@ -228,21 +218,18 @@ public class ProfileFragment extends Fragment {
             new ActivityResultContracts.RequestPermission(),
             isGranted -> {
                 if (isGranted) {
-                    // Gallery permission granted
                     openGallery();
                 } else {
                     Toast.makeText(requireContext(), "Storage permission denied", Toast.LENGTH_SHORT).show();
                 }
             });
 
-        // Observe user data
         viewModel.getUserData().observe(getViewLifecycleOwner(), user -> {
             if (user != null) {
                 updateUI(user);
             }
         });
         
-        // Observe error messages
         viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
             if (message != null && !message.isEmpty()) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
@@ -253,11 +240,11 @@ public class ProfileFragment extends Fragment {
     }
     
     private void updateUI(User user) {
-        // Update basic info
+        // update basic info
         displayNameText.setText(user.getDisplayName());
         usernameText.setText("@" + user.getUsername());
         
-        // Load profile image using Glide
+        // load profile image using Glide
         String profileUrl = user.getPrimaryProfilePictureUrl();
         if (profileUrl != null && !profileUrl.isEmpty()) {
             Glide.with(this)
@@ -266,7 +253,7 @@ public class ProfileFragment extends Fragment {
                     .into(profileImage);
         }
         
-        // Update bio
+        // update bio
         if (user.getBio() != null && !user.getBio().isEmpty()) {
             bioText.setText(user.getBio());
             bioContainer.setVisibility(View.VISIBLE);
@@ -276,7 +263,7 @@ public class ProfileFragment extends Fragment {
             addBioButton.setVisibility(View.VISIBLE);
         }
         
-        // Update location
+        // update location
         if (user.getLocation() != null && !user.getLocation().isEmpty()) {
             locationText.setText(user.getLocation());
             locationContainer.setVisibility(View.VISIBLE);
@@ -286,7 +273,7 @@ public class ProfileFragment extends Fragment {
             addLocationButton.setVisibility(View.VISIBLE);
         }
         
-        // Update interests
+        // update interests
         List<String> interests = user.getInterests();
         if (interests != null && !interests.isEmpty()) {
             addInterestsButton.setText("Edit Interests (" + interests.size() + ")");
@@ -296,7 +283,7 @@ public class ProfileFragment extends Fragment {
             interestsDisplayContainer.setVisibility(View.GONE);
         }
         
-        // Update stats
+        // update stats
         friendsCountText.setText(String.valueOf(user.getFriendsCount()));
         followersCountText.setText(String.valueOf(user.getFollowersCount()));
         followingCountText.setText(String.valueOf(user.getFollowingCount()));
@@ -307,7 +294,7 @@ public class ProfileFragment extends Fragment {
         interestsChipGroup.removeAllViews();
         interestsDisplayContainer.setVisibility(View.VISIBLE);
         
-        // Configure chip group
+        // configure chip group
         interestsChipGroup.setChipSpacingHorizontal(16);
         interestsChipGroup.setChipSpacingVertical(8);
         
@@ -316,7 +303,7 @@ public class ProfileFragment extends Fragment {
             Chip chip = new Chip(requireContext());
             chip.setText(interest);
             
-            // Set up chip styling with a pastel color based on interest category
+            // set up chip styling with a pastel color based on interest category
             int chipColor = getInterestCategoryColor(interest);
             
             chip.setChipBackgroundColorResource(chipColor);
@@ -325,7 +312,6 @@ public class ProfileFragment extends Fragment {
             chip.setElevation(2f); // Add slight elevation
             chip.setChipCornerRadius(16f); // More rounded corners
             
-            // Try to set icon based on interest - making sure it's properly visible
             int iconResId = getInterestIconResource(interest);
             if (iconResId != 0) {
                 chip.setChipIconResource(iconResId);
@@ -336,7 +322,7 @@ public class ProfileFragment extends Fragment {
                 chip.setChipIconTint(null); // Ensure icon is not being tinted/hidden
             }
             
-            // Log whether an icon was found for debugging
+            // log whether an icon was found for debugging
             if (iconResId == 0) {
                 Log.d("ProfileFragment", "No icon found for interest: " + interest);
             } else {
@@ -353,7 +339,7 @@ public class ProfileFragment extends Fragment {
     private int getInterestCategoryColor(String interest) {
         String lowerInterest = interest.toLowerCase();
         
-        // Creativity category (orange/yellow)
+        // creativity category (orange/yellow)
         if (Arrays.asList("art", "design", "photography", "crafts", "fashion", "singing", "dancing", "video", "cosplay", "make-up").contains(lowerInterest)) {
             if (lowerInterest.equals("art")) return R.color.pastel_orange;
             if (lowerInterest.equals("dancing")) return R.color.pastel_yellow;
@@ -362,7 +348,7 @@ public class ProfileFragment extends Fragment {
             return R.color.pastel_orange;
         }
         
-        // Sports category (blue/green)
+        // sports category (blue/green)
         if (Arrays.asList("badminton", "bouldering", "crew", "baseball", "bowling", "cricket", "basketball", "boxing", "cycling").contains(lowerInterest)) {
             if (lowerInterest.equals("basketball")) return R.color.pastel_blue;
             if (lowerInterest.equals("cycling")) return R.color.pastel_green;
@@ -370,7 +356,7 @@ public class ProfileFragment extends Fragment {
             return R.color.pastel_green;
         }
         
-        // Pets category (purple/pink)
+        // pets category (purple/pink)
         if (Arrays.asList("amphibians", "cats", "horses", "arthropods", "dogs", "rabbits", "birds", "fish", "reptiles", "turtles").contains(lowerInterest)) {
             if (lowerInterest.equals("cats")) return R.color.pastel_purple;
             if (lowerInterest.equals("dogs")) return R.color.pastel_pink;
@@ -378,7 +364,7 @@ public class ProfileFragment extends Fragment {
             return R.color.pastel_pink;
         }
         
-        // Default colors based on first letter for any other interest
+        // default colors based on first letter for any other interest
         char firstChar = lowerInterest.charAt(0);
         switch (firstChar % 8) {
             case 0: return R.color.pastel_blue;
@@ -394,16 +380,15 @@ public class ProfileFragment extends Fragment {
     }
     
     private int getInterestIconResource(String interest) {
-        // Map common interest names to drawable resources
         String lowerInterest = interest.toLowerCase();
         
-        // Direct mappings for specific interests
+        // direct mappings for specific interests
         if (lowerInterest.equals("art")) return R.drawable.ic_art;
         if (lowerInterest.equals("dancing")) return R.drawable.ic_dancing;
         if (lowerInterest.equals("photography")) return R.drawable.ic_photography;
         if (lowerInterest.equals("singing") || lowerInterest.equals("music")) return R.drawable.ic_music;
         
-        // Category-based mappings
+        // category-based mappings
         if (lowerInterest.equals("video") || lowerInterest.equals("design") || 
             lowerInterest.equals("crafts") || lowerInterest.equals("fashion") || 
             lowerInterest.equals("cosplay") || lowerInterest.equals("make-up")) {
@@ -426,7 +411,7 @@ public class ProfileFragment extends Fragment {
             return R.drawable.ic_pets;
         }
         
-        // Default icon based on first letter
+        // default icon based on first letter
         char firstChar = lowerInterest.charAt(0);
         switch (firstChar % 3) {
             case 0: return R.drawable.ic_creativity;
@@ -460,13 +445,12 @@ public class ProfileFragment extends Fragment {
                     Toast.makeText(requireContext(), "Display name cannot be longer than 30 characters", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                // Allow letters, numbers, spaces, and basic punctuation
+                // formatting display name
                 if (!newDisplayName.matches("^[a-zA-Z0-9 .,'!?-]+$")) {
                     Toast.makeText(requireContext(), "Display name can only contain letters, numbers, spaces, and basic punctuation", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                // Show loading state
                 positiveButton.setEnabled(false);
                 newDisplayNameInput.setEnabled(false);
 
@@ -522,7 +506,6 @@ public class ProfileFragment extends Fragment {
             positiveButton.setOnClickListener(v -> {
                 String newBio = bioInput.getText().toString().trim();
                 
-                // Show loading state
                 positiveButton.setEnabled(false);
                 bioInput.setEnabled(false);
 
@@ -578,7 +561,6 @@ public class ProfileFragment extends Fragment {
             positiveButton.setOnClickListener(v -> {
                 String newLocation = locationInput.getText().toString().trim();
                 
-                // Show loading state
                 positiveButton.setEnabled(false);
                 locationInput.setEnabled(false);
 
@@ -668,7 +650,6 @@ public class ProfileFragment extends Fragment {
                 
                 viewModel.updateEmail(currentPassword, newEmail);
                 
-                // Observe the result
                 viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
                     if (message != null && !message.isEmpty()) {
                         if (message.contains("successfully")) {
@@ -676,7 +657,6 @@ public class ProfileFragment extends Fragment {
                         }
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
                         
-                        // Re-enable inputs
                         positiveButton.setEnabled(true);
                         currentPasswordInput.setEnabled(true);
                         newEmailInput.setEnabled(true);
@@ -724,12 +704,9 @@ public class ProfileFragment extends Fragment {
                 .setPositiveButton("Delete", (dialog, which) -> {
                     String password = passwordInput.getText().toString();
                     viewModel.deleteAccount(password);
-                    
-                    // Observe the deletion result
                     viewModel.getDeletionResult().observe(getViewLifecycleOwner(), result -> {
                         if (result != null) {
                             if (result) {
-                                // Navigate to login screen
                                 Intent intent = new Intent(requireContext(), LoginActivity.class);
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intent);
@@ -802,13 +779,10 @@ public class ProfileFragment extends Fragment {
                     return;
                 }
 
-                // Show loading state
                 positiveButton.setEnabled(false);
                 newUsernameInput.setEnabled(false);
                 
                 viewModel.updateDisplayName(newUsername);
-                
-                // Observe the result
                 viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
                     if (message != null && !message.isEmpty()) {
                         if (message.contains("successfully")) {
@@ -828,7 +802,6 @@ public class ProfileFragment extends Fragment {
     }
 
     private boolean isValidDisplayName(String displayName) {
-        // Only allow letters, numbers, spaces, and basic punctuation
         return displayName.matches("^[a-zA-Z0-9\\s.,!?-]+$");
     }
 
@@ -862,7 +835,6 @@ public class ProfileFragment extends Fragment {
     }
 
     private void openInterestsSelection() {
-        // Create intent to open InterestsActivity
         Intent intent = new Intent(requireContext(), InterestsActivity.class);
         interestsLauncher.launch(intent);
     }
@@ -930,17 +902,14 @@ public class ProfileFragment extends Fragment {
     private void openCamera() {
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         
-        // Create the file where the photo should go
         File photoFile = null;
         try {
             photoFile = createImageFile();
         } catch (IOException ex) {
-            // Error occurred while creating the File
             Toast.makeText(requireContext(), "Error creating image file", Toast.LENGTH_SHORT).show();
             return;
         }
         
-        // Continue only if the file was successfully created
         if (photoFile != null) {
             try {
                 photoURI = FileProvider.getUriForFile(requireContext(),
@@ -948,19 +917,13 @@ public class ProfileFragment extends Fragment {
                         photoFile);
                 
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                
-                // Try to launch the camera intent
                 try {
                     cameraLauncher.launch(cameraIntent);
                 } catch (Exception e) {
                     Log.e("ProfileFragment", "Error launching camera: " + e.getMessage());
                     Toast.makeText(requireContext(), "Error launching camera: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    
-                    // Fallback to basic camera intent without file URI
                     Log.d("ProfileFragment", "Camera intent couldn't be resolved, trying basic intent");
                     Intent basicCameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    
-                    // Clear photoURI to indicate we're using the basic intent
                     photoURI = null;
                     
                     cameraLauncher.launch(basicCameraIntent);
@@ -1000,7 +963,6 @@ public class ProfileFragment extends Fragment {
      * Creates a temporary file for storing camera photos
      */
     private File createImageFile() throws IOException {
-        // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
         File storageDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
@@ -1024,13 +986,10 @@ public class ProfileFragment extends Fragment {
      * Uploads the selected image to Cloudinary and updates the user's profile
      */
     private void uploadProfileImage(Uri imageUri) {
-        // Show loading indicator or toast
         Toast.makeText(requireContext(), "Uploading profile picture...", Toast.LENGTH_SHORT).show();
         
-        // Initialize Cloudinary
         CloudinaryManager.init(requireContext());
         
-        // Upload the image to Cloudinary
         CloudinaryManager.uploadImage(imageUri, new UploadCallback() {
             @Override
             public void onStart(String requestId) {
@@ -1039,22 +998,18 @@ public class ProfileFragment extends Fragment {
 
             @Override
             public void onProgress(String requestId, long bytes, long totalBytes) {
-                // Could implement a progress bar here
                 double progress = (double) bytes / totalBytes;
                 Log.d("ProfileFragment", "Upload progress: " + (int)(progress * 100) + "%");
             }
 
             @Override
             public void onSuccess(String requestId, Map resultData) {
-                // Get the image URL from the result
                 String imageUrl = CloudinaryManager.getImageUrl(resultData);
                 Log.d("ProfileFragment", "Cloudinary upload successful, image URL: " + imageUrl);
                 
-                // Update the user's profile with the new image URL
                 if (imageUrl != null && !imageUrl.isEmpty()) {
                     viewModel.updateProfilePicture(imageUrl);
                     
-                    // Update the UI immediately for better user experience
                     requireActivity().runOnUiThread(() -> {
                         Glide.with(ProfileFragment.this)
                                 .load(imageUrl)

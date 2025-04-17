@@ -10,8 +10,6 @@ import android.os.Bundle;
 import android.Manifest;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Base64;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,24 +31,18 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.pineapple.capture.MainActivity;
 import com.pineapple.capture.R;
-import com.pineapple.capture.feed.FeedItem;
 import com.pineapple.capture.utils.CloudinaryManager;
 import com.cloudinary.android.callback.UploadCallback;
 import com.cloudinary.android.callback.ErrorInfo;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -128,12 +120,10 @@ public class CameraFragment extends Fragment {
         captionInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // Not needed
             }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Not needed
             }
 
             @Override
@@ -212,11 +202,9 @@ public class CameraFragment extends Fragment {
     private void resetCameraState() {
         capturedImageFile = null;
 
-        // Hide post controls
         buttonContainer.setVisibility(View.GONE);
         captionLayout.setVisibility(View.GONE);
 
-        // Show camera controls
         capturedImageView.setVisibility(View.GONE);
         previewView.setVisibility(View.VISIBLE);
         findViewById(R.id.capture_button).setVisibility(View.VISIBLE);
@@ -282,11 +270,9 @@ public class CameraFragment extends Fragment {
 
                         capturedImageView.setImageBitmap(bitmap);
 
-                        // Show post controls
                         buttonContainer.setVisibility(View.VISIBLE);
                         captionLayout.setVisibility(View.VISIBLE);
                         
-                        // Clear any previous caption
                         captionInput.setText("");
                     }
 
@@ -306,7 +292,6 @@ public class CameraFragment extends Fragment {
 
         String caption = captionInput.getText().toString().trim();
 
-        // Update UI to show loading state
         postButton.setEnabled(false);
         cancelButton.setEnabled(false);
         postButton.setText("Posting...");
@@ -316,18 +301,15 @@ public class CameraFragment extends Fragment {
         CloudinaryManager.uploadImage(Uri.fromFile(capturedImageFile), new UploadCallback() {
             @Override
             public void onStart(String requestId) {
-                // Show loading indicator or message
                 Toast.makeText(requireContext(), "Uploading image...", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onProgress(String requestId, long bytes, long totalBytes) {
-                // Update progress if needed
             }
 
             @Override
             public void onSuccess(String requestId, Map resultData) {
-                // Use the new helper method to get a clean image URL
                 String imageUrl = CloudinaryManager.getImageUrl(resultData);
                 Log.d("CameraFragment", "Cloudinary upload successful, image URL: " + imageUrl);
                 savePostToFirestore(imageUrl, caption);
@@ -356,20 +338,16 @@ public class CameraFragment extends Fragment {
             return;
         }
         
-        // Get current user
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         Log.d("CameraFragment", "Creating post for user: " + userId);
         
-        // Get user profile data
         FirebaseFirestore.getInstance().collection("users").document(userId)
             .get()
             .addOnSuccessListener(documentSnapshot -> {
                 if (documentSnapshot.exists()) {
-                    // Get profile URL from the user document
                     List<String> profilePictureUrls = (List<String>) documentSnapshot.get("profilePictureUrl");
                     String profilePictureUrl = "";
                     
-                    // Extract the primary profile picture if available
                     if (profilePictureUrls != null && !profilePictureUrls.isEmpty()) {
                         profilePictureUrl = profilePictureUrls.get(0);
                     }
@@ -377,7 +355,7 @@ public class CameraFragment extends Fragment {
                     String username = documentSnapshot.getString("username");
                     
                     if (username == null || username.isEmpty()) {
-                        username = "Anonymous"; // Default username if not set
+                        username = "Anonymous";
                     }
                     
                     // Log data for debugging
@@ -398,16 +376,13 @@ public class CameraFragment extends Fragment {
                     postData.put("profilePictureUrl", profilePictureUrl);
                     postData.put("username", username);
                     
-                    // Save directly with map to ensure all fields are included
                     FirebaseFirestore.getInstance().collection("posts")
                         .add(postData)
                         .addOnSuccessListener(documentReference -> {
-                            // Success - post created and image uploaded
                             String postId = documentReference.getId();
                             Log.d("CameraFragment", "Post saved with ID: " + postId);
                             Toast.makeText(requireContext(), "Post uploaded successfully!", Toast.LENGTH_SHORT).show();
                             
-                            // For testing: verify the post was saved by reading it back
                             FirebaseFirestore.getInstance().collection("posts").document(postId)
                                 .get()
                                 .addOnSuccessListener(postSnapshot -> {
@@ -417,17 +392,14 @@ public class CameraFragment extends Fragment {
                                         Log.w("CameraFragment", "Verification - Post was not found after saving");
                                     }
                                     
-                                    // Reset UI regardless of verification result
                                     resetCameraAfterPost();
                                 })
                                 .addOnFailureListener(e -> {
                                     Log.w("CameraFragment", "Verification - Failed to verify post save: " + e.getMessage());
-                                    // Still reset UI as the post was saved
                                     resetCameraAfterPost();
                                 });
                         })
                         .addOnFailureListener(e -> {
-                            // Error saving post
                             Log.e("CameraFragment", "Error saving post: " + e.getMessage(), e);
                             postButton.setEnabled(true);
                             cancelButton.setEnabled(true);
@@ -435,7 +407,6 @@ public class CameraFragment extends Fragment {
                             Toast.makeText(requireContext(), "Error saving post: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         });
                 } else {
-                    // User document doesn't exist
                     Log.e("CameraFragment", "User profile not found");
                     Toast.makeText(requireContext(), "Error: User profile not found", Toast.LENGTH_SHORT).show();
                     postButton.setEnabled(true);
@@ -444,7 +415,6 @@ public class CameraFragment extends Fragment {
                 }
             })
             .addOnFailureListener(e -> {
-                // Error fetching user profile
                 Log.e("CameraFragment", "Error fetching user profile: " + e.getMessage());
                 postButton.setEnabled(true);
                 cancelButton.setEnabled(true);
@@ -457,27 +427,22 @@ public class CameraFragment extends Fragment {
         return requireView().findViewById(id);
     }
     
-    // Reset entire camera state after a successful post
     private void resetCameraAfterPost() {
         capturedImageFile = null;
         
-        // Hide post controls
         buttonContainer.setVisibility(View.GONE);
         captionLayout.setVisibility(View.GONE);
         
-        // Show camera preview and controls
         capturedImageView.setVisibility(View.GONE);
         previewView.setVisibility(View.VISIBLE);
         findViewById(R.id.capture_button).setVisibility(View.VISIBLE);
         findViewById(R.id.switch_camera_button).setVisibility(View.VISIBLE);
         findViewById(R.id.toggle_flash).setVisibility(View.VISIBLE);
         
-        // Reset button states
         postButton.setEnabled(true);
         cancelButton.setEnabled(true);
         postButton.setText("Post");
         
-        // Return to the home tab with the new post
         Log.d("CameraFragment", "Post successful, returning to home tab");
         if (getActivity() != null) {
             try {
@@ -494,7 +459,6 @@ public class CameraFragment extends Fragment {
                 }
             } catch (Exception e) {
                 Log.e("CameraFragment", "Error navigating back to home tab: " + e.getMessage(), e);
-                // Just finish as fallback
                 getActivity().finish();
             }
         }

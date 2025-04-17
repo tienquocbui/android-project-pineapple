@@ -10,7 +10,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -23,7 +22,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -41,7 +39,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.pineapple.capture.R;
 import com.pineapple.capture.databinding.FragmentHomeBinding;
@@ -51,7 +48,6 @@ import com.pineapple.capture.profile.ProfileViewModel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -76,29 +72,23 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        // Initialize views
         feedRecyclerView = root.findViewById(R.id.feed_recycler_view);
         swipeRefreshLayout = root.findViewById(R.id.swipe_refresh_layout);
         emptyStateLayout = root.findViewById(R.id.empty_state_layout);
 
-        // Initialize data
         feedItems = new ArrayList<>();
         
-        // Setup RecyclerView
         feedRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         feedAdapter = new FeedAdapter(feedItems, this);
         feedAdapter.setHasStableIds(true); // Improve RecyclerView performance
         feedRecyclerView.setAdapter(feedAdapter);
         
-        // Initialize Firebase
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
-        // Set up SwipeRefreshLayout
         swipeRefreshLayout.setOnRefreshListener(this::loadFeedPosts);
         swipeRefreshLayout.setColorSchemeResources(R.color.primary_blue);
         
-        // Load initial data
         loadFeedPosts();
         
         return root;
@@ -113,7 +103,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
     @Override
     public void onResume() {
         super.onResume();
-        // Reload posts when fragment becomes visible
         Log.d("HomeFragment", "onResume - reloading posts");
         loadFeedPosts();
     }
@@ -124,10 +113,8 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         Log.d("HomeFragment", "Loading feed posts...");
         swipeRefreshLayout.setRefreshing(true);
 
-        // Get current user ID for checking liked posts
         String currentUserId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
 
-        // First, log the number of posts in the collection for diagnostic purposes
         db.collection("posts").get()
             .addOnSuccessListener(snapshot -> {
                 int count = snapshot.size();
@@ -145,7 +132,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
             })
             .addOnFailureListener(e -> Log.e("HomeFragment", "Error checking post count", e));
         
-        // Fetch posts sorted by timestamp
         db.collection("posts")
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .get()
@@ -169,10 +155,8 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                             continue;
                         }
                         
-                        // Make sure item has an ID set
                         item.setId(document.getId());
                         
-                        // Check if current user has liked this post
                         if (currentUserId != null && item.isLikedBy(currentUserId)) {
                             item.setLikedByCurrentUser(true);
                         }
@@ -186,7 +170,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                               ", liked by current user=" + item.isLikedByCurrentUser() +
                               ", timestamp=" + (item.getTimestamp() != null ? item.getTimestamp().toDate() : "null"));
                         
-                        // Add valid posts only
                         if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {
                             feedItems.add(item);
                             Log.d("HomeFragment", "Added post to feedItems. New size: " + feedItems.size());
@@ -223,17 +206,14 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                 String errorMsg = e.getMessage();
                 Log.e("HomeFragment", "Error loading posts: " + errorMsg, e);
                 
-                // Check for network connectivity issues
                 if (errorMsg != null && errorMsg.contains("UNAVAILABLE")) {
                     Log.w("HomeFragment", "Network appears to be unavailable, retrying in 3 seconds");
                     
-                    // Retry after a delay
                     new Handler(Looper.getMainLooper()).postDelayed(
                         this::loadFeedPosts, 
                         3000
                     );
                 } else {
-                    // For other errors, just stop the refresh indicator
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             swipeRefreshLayout.setRefreshing(false);
@@ -270,13 +250,11 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                     
                     Log.d("HomeFragment", "DEBUG: Post " + doc.getId() + " data: " + data);
                     
-                    // Check if this is the specific post we're looking for
                     if (doc.getId().equals(specificPostId)) {
                         foundSpecificPost = true;
                         Log.d("HomeFragment", "DEBUG: Found the specific post: " + specificPostId);
                         Log.d("HomeFragment", "DEBUG: Post data: " + data);
                         
-                        // Verify all required fields
                         String imageUrl = (String) data.get("imageUrl");
                         String content = (String) data.get("content");
                         String username = (String) data.get("username");
@@ -349,7 +327,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         }
     }
 
-    // Method to handle likes
     private void handleLike(FeedItem post) {
         if (mAuth.getCurrentUser() == null) {
             Toast.makeText(getContext(), "You must be logged in to like posts", Toast.LENGTH_SHORT).show();
@@ -366,14 +343,12 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                 Log.d("HomeFragment", "Post " + (isNowLiked ? "liked" : "unliked") + " successfully");
             })
             .addOnFailureListener(e -> {
-                // Revert the like status on failure
                 post.toggleLike(userId); // Toggle back
-                feedAdapter.notifyDataSetChanged(); // Refresh UI
+                feedAdapter.notifyDataSetChanged();
                 Toast.makeText(getContext(), "Failed to update like status", Toast.LENGTH_SHORT).show();
                 Log.e("HomeFragment", "Error updating like status", e);
             });
         
-        // Update UI immediately without waiting for Firestore
         feedAdapter.notifyDataSetChanged();
     }
     
@@ -391,41 +366,34 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
             shareText += "Image: " + post.getImageUrl();
         }
         
-        // You would add your app's download or sharing link here
         shareText += "\n\nDownload Capture to see more!";
         
         shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
         startActivity(Intent.createChooser(shareIntent, "Share via"));
     }
     
-    // Method to show comment dialog
     private void showCommentDialog(FeedItem post) {
         if (getContext() == null) return;
         
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), R.style.AppTheme_AlertDialog);
         builder.setTitle("Add a comment");
         
-        // Set up the input field
         final EditText input = new EditText(getContext());
         input.setHint("Write your comment...");
         input.setInputType(InputType.TYPE_CLASS_TEXT);
         input.setTextColor(getResources().getColor(R.color.white));
         input.setHintTextColor(getResources().getColor(R.color.system_gray));
         
-        // Add padding
         int paddingPx = (int) (16 * getResources().getDisplayMetrics().density);
         input.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
         
-        // Set up the view
         builder.setView(input);
         
-        // Set up the buttons
         builder.setPositiveButton("Post", (dialog, which) -> {
             String commentText = input.getText().toString().trim();
             if (!commentText.isEmpty() && mAuth.getCurrentUser() != null) {
                 addComment(post, commentText);
                 
-                // Find the post's position and force a refresh of that specific item
                 for (int i = 0; i < feedItems.size(); i++) {
                     if (feedItems.get(i).getId().equals(post.getId())) {
                         feedAdapter.notifyItemChanged(i);
@@ -443,17 +411,14 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         dialog.show();
     }
     
-    // Method to add a comment to a post
     private void addComment(FeedItem post, String commentText) {
         if (mAuth.getCurrentUser() == null) return;
         
         String userId = mAuth.getCurrentUser().getUid();
         String username = mAuth.getCurrentUser().getDisplayName();
         
-        // Add to local model
         post.addComment(userId, username, commentText);
         
-        // Update Firestore
         db.collection("posts").document(post.getId())
             .update("comments", post.getComments())
             .addOnSuccessListener(aVoid -> {
@@ -470,7 +435,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
     private static class FeedAdapter extends RecyclerView.Adapter<FeedAdapter.FeedViewHolder> {
         private final List<FeedItem> feedItems;
         private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy 'at' h:mm a", Locale.getDefault());
-
         private final OnDeleteClickListener listener;
 
 
@@ -548,19 +512,16 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
             }
 
             public void bind(FeedItem post, SimpleDateFormat dateFormat) {
-                // Set username
                 usernameText.setText(post.getUsername() != null ? post.getUsername() : "Anonymous");
 
                 
-                // Set caption
                 if (post.getContent() != null && !post.getContent().isEmpty()) {
                     captionText.setVisibility(View.VISIBLE);
                     captionText.setText(post.getContent());
                 } else {
                     captionText.setVisibility(View.GONE);
                 }
-                
-                // Set timestamp
+
                 if (post.getTimestamp() != null) {
                     Timestamp timestamp = post.getTimestamp();
                     Date date = timestamp.toDate();
@@ -568,11 +529,9 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                 } else {
                     timestampText.setText("Just now");
                 }
-                
-                // Set likes count
+
                 likesText.setText(String.format(Locale.getDefault(), "%d likes", post.getLikes()));
 
-                // Load profile image
                 String profileUrl = post.getProfilePictureUrl();
                 if (profileUrl != null && !profileUrl.isEmpty()) {
                     Glide.with(itemView.getContext())
@@ -582,41 +541,31 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                             .circleCrop()
                             .into(profileImage);
                 } else {
-                    // Set default profile image
                     Glide.with(itemView.getContext())
                             .load(R.drawable.ic_person)
                             .circleCrop()
                             .into(profileImage);
                 }
 
-                // Load post image with rounded corners
                 if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
                     try {
                         String imageUrl = post.getImageUrl().trim();
                         Log.d("FeedViewHolder", "Loading post image: " + imageUrl + " for post: " + post.getId());
                         
-                        // Ensure URL starts with http or https
                         if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
                             imageUrl = "https://" + imageUrl;
                             Log.d("FeedViewHolder", "Fixed image URL to: " + imageUrl);
                         }
                         
-                        // Create a final copy of the URL for use in the listener
                         final String finalImageUrl = imageUrl;
-                        
-                        // Make sure postImage is visible
                         postImage.setVisibility(View.VISIBLE);
-                        
-                        // Set a colored background while loading
                         postImage.setBackgroundColor(itemView.getResources().getColor(R.color.system_gray));
                         
-                        // Use more reliable RequestOptions
                         RequestOptions requestOptions = new RequestOptions()
                                 .transforms(new CenterCrop(), new RoundedCorners(16))
                                 .placeholder(R.drawable.placeholder_image)
                                 .error(R.drawable.error_image);
                                 
-                        // Using more reliable image loading approach
                         Glide.with(itemView.getContext())
                                 .load(finalImageUrl)
                                 .apply(requestOptions)
@@ -628,7 +577,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                                         Log.e("FeedViewHolder", "Failed to load image: " + finalImageUrl + 
                                               ", error: " + (e != null ? e.getMessage() : "unknown"));
                                         
-                                        // Try one more time with http if https failed
                                         if (finalImageUrl.startsWith("https://")) {
                                             String httpUrl = "http://" + finalImageUrl.substring(8);
                                             Log.d("FeedViewHolder", "Retrying with HTTP URL: " + httpUrl);
@@ -667,10 +615,8 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                     postImage.setVisibility(View.GONE);
                 }
 
-                // Display comments
                 setupComments(post);
 
-                // Update like button icon based on whether the current user has liked the post
                 if (post.isLikedByCurrentUser()) {
                     likeButton.setImageResource(R.drawable.ic_favorite);
                     likeButton.setColorFilter(itemView.getContext().getResources().getColor(R.color.system_red));
@@ -679,9 +625,7 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                     likeButton.setColorFilter(itemView.getContext().getResources().getColor(R.color.white));
                 }
                 
-                // Set up click listeners for action buttons
                 likeButton.setOnClickListener(v -> {
-                    // Cast context to HomeFragment to handle the like action
                     if (itemView.getContext() instanceof FragmentActivity) {
                         FragmentActivity activity = (FragmentActivity) itemView.getContext();
                         HomeFragment fragment = (HomeFragment) activity.getSupportFragmentManager()
@@ -694,7 +638,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                 });
                 
                 commentButton.setOnClickListener(v -> {
-                    // Cast context to HomeFragment to handle the comment action
                     if (itemView.getContext() instanceof FragmentActivity) {
                         FragmentActivity activity = (FragmentActivity) itemView.getContext();
                         HomeFragment fragment = (HomeFragment) activity.getSupportFragmentManager()
@@ -707,7 +650,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                 });
                 
                 shareButton.setOnClickListener(v -> {
-                    // Cast context to HomeFragment to handle the share action
                     if (itemView.getContext() instanceof FragmentActivity) {
                         FragmentActivity activity = (FragmentActivity) itemView.getContext();
                         HomeFragment fragment = (HomeFragment) activity.getSupportFragmentManager()
@@ -721,7 +663,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
             }
 
             private void setupComments(FeedItem post) {
-                // Clear previous comments
                 commentsContainer.removeAllViews();
                 
                 List<Map<String, Object>> comments = post.getComments();
@@ -732,34 +673,27 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                     return;
                 }
                 
-                // Show comments header
                 commentsHeader.setVisibility(View.VISIBLE);
                 commentsContainer.setVisibility(View.VISIBLE);
                 
-                // Determine how many comments to show
                 int commentCount = comments.size();
                 int commentsToShow = Math.min(commentCount, 3); // Show up to 3 comments
                 
-                // Show "View all comments" if there are more than 3
                 if (commentCount > 3) {
                     viewAllComments.setVisibility(View.VISIBLE);
                     viewAllComments.setText(String.format("View all %d comments", commentCount));
                     
-                    // Set click listener to show all comments
                     viewAllComments.setOnClickListener(v -> {
-                        // Show all comments
                         commentsContainer.removeAllViews();
                         for (Map<String, Object> commentData : comments) {
                             addCommentView(commentData);
                         }
-                        // Hide the "View all" button since all are now shown
                         viewAllComments.setVisibility(View.GONE);
                     });
                 } else {
                     viewAllComments.setVisibility(View.GONE);
                 }
                 
-                // Add the limited number of comments to the view
                 for (int i = 0; i < commentsToShow; i++) {
                     Map<String, Object> commentData = comments.get(i);
                     addCommentView(commentData);

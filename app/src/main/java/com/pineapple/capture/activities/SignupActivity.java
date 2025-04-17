@@ -66,14 +66,12 @@ public class SignupActivity extends AppCompatActivity {
         }
 
         showLoading(true);
-        // Check username uniqueness in Firestore
         authManager.isUsernameUnique(username, isUnique -> {
             if (!isUnique) {
                 showLoading(false);
                 Toast.makeText(this, "Username is already taken", Toast.LENGTH_SHORT).show();
                 return;
             }
-            // Proceed with signup
             authManager.signup(displayName, username, email, password)
                     .addOnCompleteListener(task -> {
                         showLoading(false);
