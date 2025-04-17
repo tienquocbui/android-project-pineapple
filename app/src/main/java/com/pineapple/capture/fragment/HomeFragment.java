@@ -414,7 +414,10 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         
         // Add padding
         int paddingPx = (int) (16 * getResources().getDisplayMetrics().density);
-        builder.setView(input, paddingPx, paddingPx, paddingPx, paddingPx);
+        input.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
+        
+        // Set up the view
+        builder.setView(input);
         
         // Set up the buttons
         builder.setPositiveButton("Post", (dialog, which) -> {
