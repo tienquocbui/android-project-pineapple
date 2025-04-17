@@ -44,4 +44,14 @@
     <color name="accent">#0A84FF</color>
     <color name="error">#FF453A</color>
     <color name="divider">#38383A</color>
+
+    <!-- Pastel Colors for Interest Chips -->
+    <color name="pastel_blue">#B3E5FC</color>
+    <color name="pastel_green">#C8E6C9</color>
+    <color name="pastel_purple">#E1BEE7</color>
+    <color name="pastel_pink">#F8BBD0</color>
+    <color name="pastel_orange">#FFCCBC</color>
+    <color name="pastel_yellow">#FFF9C4</color>
+    <color name="pastel_teal">#B2DFDB</color>
+    <color name="pastel_cyan">#B2EBF2</color>
 </resources>

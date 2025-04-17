@@ -1,16 +1,20 @@
 package com.pineapple.capture.fragment;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -61,6 +66,7 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
     private SwipeRefreshLayout swipeRefreshLayout;
     private View emptyStateLayout;
     private FirebaseFirestore db;
+    private FirebaseAuth mAuth;
 
     public HomeFragment() {}
 
@@ -84,10 +90,10 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         feedAdapter.setHasStableIds(true); // Improve RecyclerView performance
         feedRecyclerView.setAdapter(feedAdapter);
         
-        // Initialize Firestore
+        // Initialize Firebase
         db = FirebaseFirestore.getInstance();
+        mAuth = FirebaseAuth.getInstance();
 
-        
         // Set up SwipeRefreshLayout
         swipeRefreshLayout.setOnRefreshListener(this::loadFeedPosts);
         swipeRefreshLayout.setColorSchemeResources(R.color.primary_blue);
@@ -118,6 +124,8 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         Log.d("HomeFragment", "Loading feed posts...");
         swipeRefreshLayout.setRefreshing(true);
 
+        // Get current user ID for checking liked posts
+        String currentUserId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
 
         // First, log the number of posts in the collection for diagnostic purposes
         db.collection("posts").get()
@@ -164,11 +172,18 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                         // Make sure item has an ID set
                         item.setId(document.getId());
                         
+                        // Check if current user has liked this post
+                        if (currentUserId != null && item.isLikedBy(currentUserId)) {
+                            item.setLikedByCurrentUser(true);
+                        }
+                        
                         // Debug log all properties
                         Log.d("HomeFragment", "FeedItem: id=" + item.getId() + 
                               ", content=" + item.getContent() + 
                               ", imageUrl=" + item.getImageUrl() + 
                               ", username=" + item.getUsername() +
+                              ", likes=" + item.getLikes() +
+                              ", liked by current user=" + item.isLikedByCurrentUser() +
                               ", timestamp=" + (item.getTimestamp() != null ? item.getTimestamp().toDate() : "null"));
                         
                         // Add valid posts only
@@ -334,6 +349,120 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         }
     }
 
+    // Method to handle likes
+    private void handleLike(FeedItem post) {
+        if (mAuth.getCurrentUser() == null) {
+            Toast.makeText(getContext(), "You must be logged in to like posts", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        String userId = mAuth.getCurrentUser().getUid();
+        boolean isNowLiked = post.toggleLike(userId);
+        
+        // Update Firestore
+        db.collection("posts").document(post.getId())
+            .update("likes", post.getLikes(), "likedBy", post.getLikedBy())
+            .addOnSuccessListener(aVoid -> {
+                Log.d("HomeFragment", "Post " + (isNowLiked ? "liked" : "unliked") + " successfully");
+            })
+            .addOnFailureListener(e -> {
+                // Revert the like status on failure
+                post.toggleLike(userId); // Toggle back
+                feedAdapter.notifyDataSetChanged(); // Refresh UI
+                Toast.makeText(getContext(), "Failed to update like status", Toast.LENGTH_SHORT).show();
+                Log.e("HomeFragment", "Error updating like status", e);
+            });
+        
+        // Update UI immediately without waiting for Firestore
+        feedAdapter.notifyDataSetChanged();
+    }
+    
+    // Method to share a post
+    private void sharePost(FeedItem post) {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        
+        String shareText = "Check out this post from " + post.getUsername() + " on Capture!\n\n";
+        if (post.getContent() != null && !post.getContent().isEmpty()) {
+            shareText += post.getContent() + "\n\n";
+        }
+        
+        if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
+            shareText += "Image: " + post.getImageUrl();
+        }
+        
+        // You would add your app's download or sharing link here
+        shareText += "\n\nDownload Capture to see more!";
+        
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+        startActivity(Intent.createChooser(shareIntent, "Share via"));
+    }
+    
+    // Method to show comment dialog
+    private void showCommentDialog(FeedItem post) {
+        if (getContext() == null) return;
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), R.style.AppTheme_AlertDialog);
+        builder.setTitle("Add a comment");
+        
+        // Set up the input field
+        final EditText input = new EditText(getContext());
+        input.setHint("Write your comment...");
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setTextColor(getResources().getColor(R.color.white));
+        input.setHintTextColor(getResources().getColor(R.color.system_gray));
+        
+        // Add padding
+        int paddingPx = (int) (16 * getResources().getDisplayMetrics().density);
+        builder.setView(input, paddingPx, paddingPx, paddingPx, paddingPx);
+        
+        // Set up the buttons
+        builder.setPositiveButton("Post", (dialog, which) -> {
+            String commentText = input.getText().toString().trim();
+            if (!commentText.isEmpty() && mAuth.getCurrentUser() != null) {
+                addComment(post, commentText);
+                
+                // Find the post's position and force a refresh of that specific item
+                for (int i = 0; i < feedItems.size(); i++) {
+                    if (feedItems.get(i).getId().equals(post.getId())) {
+                        feedAdapter.notifyItemChanged(i);
+                        break;
+                    }
+                }
+            } else {
+                Toast.makeText(getContext(), "Comment cannot be empty", Toast.LENGTH_SHORT).show();
+            }
+        });
+        
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+    
+    // Method to add a comment to a post
+    private void addComment(FeedItem post, String commentText) {
+        if (mAuth.getCurrentUser() == null) return;
+        
+        String userId = mAuth.getCurrentUser().getUid();
+        String username = mAuth.getCurrentUser().getDisplayName();
+        
+        // Add to local model
+        post.addComment(userId, username, commentText);
+        
+        // Update Firestore
+        db.collection("posts").document(post.getId())
+            .update("comments", post.getComments())
+            .addOnSuccessListener(aVoid -> {
+                Log.d("HomeFragment", "Comment added successfully");
+                Toast.makeText(getContext(), "Comment added", Toast.LENGTH_SHORT).show();
+                feedAdapter.notifyDataSetChanged(); // Refresh UI
+            })
+            .addOnFailureListener(e -> {
+                Log.e("HomeFragment", "Error adding comment", e);
+                Toast.makeText(getContext(), "Failed to add comment", Toast.LENGTH_SHORT).show();
+            });
+    }
 
     private static class FeedAdapter extends RecyclerView.Adapter<FeedAdapter.FeedViewHolder> {
         private final List<FeedItem> feedItems;
@@ -391,6 +520,12 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
             private final TextView timestampText;
             private final TextView likesText;
             private final ImageButton deletePostsButton;
+            private final ImageButton likeButton;
+            private final ImageButton commentButton;
+            private final ImageButton shareButton;
+            private final TextView commentsHeader;
+            private final LinearLayout commentsContainer;
+            private final TextView viewAllComments;
 
             public FeedViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -401,6 +536,12 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                 timestampText = itemView.findViewById(R.id.timestamp_text);
                 likesText = itemView.findViewById(R.id.likes_text);
                 deletePostsButton = itemView.findViewById(R.id.delete_button);
+                likeButton = itemView.findViewById(R.id.like_button);
+                commentButton = itemView.findViewById(R.id.comment_button);
+                shareButton = itemView.findViewById(R.id.share_button);
+                commentsHeader = itemView.findViewById(R.id.comments_header);
+                commentsContainer = itemView.findViewById(R.id.comments_container);
+                viewAllComments = itemView.findViewById(R.id.view_all_comments);
             }
 
             public void bind(FeedItem post, SimpleDateFormat dateFormat) {
@@ -521,6 +662,124 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                     Log.w("FeedViewHolder", "No image URL for post: " + post.getId());
                     postImage.setVisibility(View.GONE);
                 }
+
+                // Display comments
+                setupComments(post);
+
+                // Update like button icon based on whether the current user has liked the post
+                if (post.isLikedByCurrentUser()) {
+                    likeButton.setImageResource(R.drawable.ic_favorite);
+                    likeButton.setColorFilter(itemView.getContext().getResources().getColor(R.color.system_red));
+                } else {
+                    likeButton.setImageResource(R.drawable.ic_favorite_border);
+                    likeButton.setColorFilter(itemView.getContext().getResources().getColor(R.color.white));
+                }
+                
+                // Set up click listeners for action buttons
+                likeButton.setOnClickListener(v -> {
+                    // Cast context to HomeFragment to handle the like action
+                    if (itemView.getContext() instanceof FragmentActivity) {
+                        FragmentActivity activity = (FragmentActivity) itemView.getContext();
+                        HomeFragment fragment = (HomeFragment) activity.getSupportFragmentManager()
+                                .findFragmentById(R.id.fragment_container);
+                        
+                        if (fragment != null) {
+                            fragment.handleLike(post);
+                        }
+                    }
+                });
+                
+                commentButton.setOnClickListener(v -> {
+                    // Cast context to HomeFragment to handle the comment action
+                    if (itemView.getContext() instanceof FragmentActivity) {
+                        FragmentActivity activity = (FragmentActivity) itemView.getContext();
+                        HomeFragment fragment = (HomeFragment) activity.getSupportFragmentManager()
+                                .findFragmentById(R.id.fragment_container);
+                        
+                        if (fragment != null) {
+                            fragment.showCommentDialog(post);
+                        }
+                    }
+                });
+                
+                shareButton.setOnClickListener(v -> {
+                    // Cast context to HomeFragment to handle the share action
+                    if (itemView.getContext() instanceof FragmentActivity) {
+                        FragmentActivity activity = (FragmentActivity) itemView.getContext();
+                        HomeFragment fragment = (HomeFragment) activity.getSupportFragmentManager()
+                                .findFragmentById(R.id.fragment_container);
+                        
+                        if (fragment != null) {
+                            fragment.sharePost(post);
+                        }
+                    }
+                });
+            }
+
+            private void setupComments(FeedItem post) {
+                // Clear previous comments
+                commentsContainer.removeAllViews();
+                
+                List<Map<String, Object>> comments = post.getComments();
+                if (comments == null || comments.isEmpty()) {
+                    commentsHeader.setVisibility(View.GONE);
+                    commentsContainer.setVisibility(View.GONE);
+                    viewAllComments.setVisibility(View.GONE);
+                    return;
+                }
+                
+                // Show comments header
+                commentsHeader.setVisibility(View.VISIBLE);
+                commentsContainer.setVisibility(View.VISIBLE);
+                
+                // Determine how many comments to show
+                int commentCount = comments.size();
+                int commentsToShow = Math.min(commentCount, 3); // Show up to 3 comments
+                
+                // Show "View all comments" if there are more than 3
+                if (commentCount > 3) {
+                    viewAllComments.setVisibility(View.VISIBLE);
+                    viewAllComments.setText(String.format("View all %d comments", commentCount));
+                    
+                    // Set click listener to show all comments
+                    viewAllComments.setOnClickListener(v -> {
+                        // Show all comments
+                        commentsContainer.removeAllViews();
+                        for (Map<String, Object> commentData : comments) {
+                            addCommentView(commentData);
+                        }
+                        // Hide the "View all" button since all are now shown
+                        viewAllComments.setVisibility(View.GONE);
+                    });
+                } else {
+                    viewAllComments.setVisibility(View.GONE);
+                }
+                
+                // Add the limited number of comments to the view
+                for (int i = 0; i < commentsToShow; i++) {
+                    Map<String, Object> commentData = comments.get(i);
+                    addCommentView(commentData);
+                }
+            }
+            
+            private void addCommentView(Map<String, Object> commentData) {
+                // Create a new comment view
+                View commentView = LayoutInflater.from(itemView.getContext())
+                        .inflate(R.layout.item_comment, commentsContainer, false);
+                
+                // Get views
+                TextView usernameView = commentView.findViewById(R.id.comment_username);
+                TextView textView = commentView.findViewById(R.id.comment_text);
+                
+                // Set data
+                String username = (String) commentData.get("username");
+                String text = (String) commentData.get("text");
+                
+                usernameView.setText(username != null ? username : "Anonymous");
+                textView.setText(text != null ? text : "");
+                
+                // Add to container
+                commentsContainer.addView(commentView);
             }
         }
     }

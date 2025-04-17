@@ -13,6 +13,9 @@ import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.pineapple.capture.models.User;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ProfileViewModel extends ViewModel {
     private final FirebaseAuth mAuth;
     private final FirebaseFirestore db;
@@ -31,7 +34,7 @@ public class ProfileViewModel extends ViewModel {
         loadUserData();
     }
 
-    private void loadUserData() {
+    public void loadUserData() {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
             isLoading.setValue(true);
@@ -51,11 +54,13 @@ public class ProfileViewModel extends ViewModel {
                             if (user.getDisplayName() == null || user.getDisplayName().isEmpty()) {
                                 user.setDisplayName(currentUser.getDisplayName());
                             }
-                            userData.setValue(user);
+                            
+                            // Fetch post count from Firestore
+                            fetchPostCount(user);
                         } else {
                             errorMessage.setValue("Failed to convert document to User object");
+                            isLoading.setValue(false);
                         }
-                        isLoading.setValue(false);
                     })
                     .addOnFailureListener(e -> {
                         errorMessage.setValue("Failed to load user data: " + e.getMessage());
@@ -65,12 +70,33 @@ public class ProfileViewModel extends ViewModel {
             errorMessage.setValue("No current user found");
         }
     }
+    
+    private void fetchPostCount(User user) {
+        // Query posts collection for documents with matching userId
+        db.collection("posts")
+            .whereEqualTo("userId", user.getId())
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                int count = querySnapshot.size();
+                user.setPostCount(count);
+                
+                // Update UI with the complete user data including post count
+                userData.setValue(user);
+                isLoading.setValue(false);
+            })
+            .addOnFailureListener(e -> {
+                // Still update UI with user data, just without accurate post count
+                userData.setValue(user);
+                errorMessage.setValue("Failed to load post count: " + e.getMessage());
+                isLoading.setValue(false);
+            });
+    }
 
     public void updateEmail(String currentPassword, String newEmail) {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user == null) {
             errorMessage.setValue("No user is currently signed in");
-            return;
+                        return;
         }
 
         // First, re-authenticate the user
@@ -250,9 +276,11 @@ public class ProfileViewModel extends ViewModel {
             return;
         }
 
+        // Update display name in Firestore
         db.collection("users").document(user.getUid())
             .update("displayName", newDisplayName)
             .addOnSuccessListener(aVoid -> {
+                // Update the local user data
                 User currentUser = userData.getValue();
                 if (currentUser != null) {
                     currentUser.setDisplayName(newDisplayName);
@@ -265,28 +293,248 @@ public class ProfileViewModel extends ViewModel {
             });
     }
 
+    public void updateBio(String newBio) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            errorMessage.setValue("No user is currently signed in");
+            return;
+        }
+
+        // Validate bio length
+        if (newBio.length() > 150) {
+            errorMessage.setValue("Bio cannot be longer than 150 characters");
+            return;
+        }
+
+        // Update bio in Firestore
+        db.collection("users").document(user.getUid())
+            .update("bio", newBio)
+            .addOnSuccessListener(aVoid -> {
+                // Update the local user data
+                User currentUser = userData.getValue();
+                if (currentUser != null) {
+                    currentUser.setBio(newBio);
+                    userData.setValue(currentUser);
+                }
+                errorMessage.setValue("Bio updated successfully");
+            })
+            .addOnFailureListener(e -> {
+                errorMessage.setValue("Failed to update bio: " + e.getMessage());
+            });
+    }
+
+    public void updateLocation(String newLocation) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            errorMessage.setValue("No user is currently signed in");
+            return;
+        }
+
+        // Validate location length
+        if (newLocation.length() > 50) {
+            errorMessage.setValue("Location cannot be longer than 50 characters");
+            return;
+        }
+
+        // Update location in Firestore
+        db.collection("users").document(user.getUid())
+            .update("location", newLocation)
+            .addOnSuccessListener(aVoid -> {
+                // Update the local user data
+                User currentUser = userData.getValue();
+                if (currentUser != null) {
+                    currentUser.setLocation(newLocation);
+                    userData.setValue(currentUser);
+                }
+                errorMessage.setValue("Location updated successfully");
+            })
+            .addOnFailureListener(e -> {
+                errorMessage.setValue("Failed to update location: " + e.getMessage());
+            });
+    }
+
+    public void updateInterests(List<String> interests) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            errorMessage.setValue("No user is currently signed in");
+            return;
+        }
+
+        // Update interests in Firestore
+        db.collection("users").document(user.getUid())
+            .update("interests", interests)
+            .addOnSuccessListener(aVoid -> {
+                // Update the local user data
+                User currentUser = userData.getValue();
+                if (currentUser != null) {
+                    currentUser.setInterests(interests);
+                    userData.setValue(currentUser);
+                }
+                errorMessage.setValue("Interests updated successfully");
+            })
+            .addOnFailureListener(e -> {
+                errorMessage.setValue("Failed to update interests: " + e.getMessage());
+            });
+    }
+
+    public void followUser(String userIdToFollow) {
+        FirebaseUser currentAuthUser = mAuth.getCurrentUser();
+        if (currentAuthUser == null) {
+            errorMessage.setValue("No user is currently signed in");
+            return;
+        }
+        
+        String currentUserId = currentAuthUser.getUid();
+        
+        // Don't allow following yourself
+        if (currentUserId.equals(userIdToFollow)) {
+            errorMessage.setValue("You cannot follow yourself");
+            return;
+        }
+        
+        // Get a reference to the current user's document
+        db.collection("users").document(currentUserId)
+            .get()
+            .addOnSuccessListener(currentUserDoc -> {
+                User currentUser = currentUserDoc.toObject(User.class);
+                if (currentUser == null) {
+                    errorMessage.setValue("Could not load current user data");
+                    return;
+                }
+                
+                // Check if already following
+                List<String> following = currentUser.getFollowing();
+                if (following != null && following.contains(userIdToFollow)) {
+                    errorMessage.setValue("You are already following this user");
+                    return;
+                }
+                
+                // Add to current user's following list
+                if (following == null) {
+                    following = new ArrayList<>();
+                }
+                following.add(userIdToFollow);
+                
+                // Create a final copy of the following list for the transaction
+                final List<String> finalFollowing = new ArrayList<>(following);
+                
+                // Update Firestore in a transaction
+                db.runTransaction(transaction -> {
+                    // Update current user's following list
+                    transaction.update(db.collection("users").document(currentUserId), 
+                            "following", finalFollowing);
+                    
+                    // Update target user's followers list
+                    db.collection("users").document(userIdToFollow)
+                        .get()
+                        .addOnSuccessListener(targetUserDoc -> {
+                            User targetUser = targetUserDoc.toObject(User.class);
+                            if (targetUser != null) {
+                                List<String> followers = targetUser.getFollowers();
+                                if (followers == null) {
+                                    followers = new ArrayList<>();
+                                }
+                                followers.add(currentUserId);
+                                db.collection("users").document(userIdToFollow)
+                                    .update("followers", followers);
+                            }
+                        });
+                    
+                    return null;
+                }).addOnSuccessListener(aVoid -> {
+                    // Update local user data
+                    User updatedUser = userData.getValue();
+                    if (updatedUser != null) {
+                        updatedUser.setFollowing(finalFollowing);
+                        userData.setValue(updatedUser);
+                    }
+                    errorMessage.setValue("Now following user");
+                    loadUserData(); // Refresh to get updated counts
+                }).addOnFailureListener(e -> {
+                    errorMessage.setValue("Failed to follow user: " + e.getMessage());
+                });
+            })
+            .addOnFailureListener(e -> {
+                errorMessage.setValue("Error loading user data: " + e.getMessage());
+            });
+    }
+    
+    public void unfollowUser(String userIdToUnfollow) {
+        FirebaseUser currentAuthUser = mAuth.getCurrentUser();
+        if (currentAuthUser == null) {
+            errorMessage.setValue("No user is currently signed in");
+            return;
+        }
+        
+        String currentUserId = currentAuthUser.getUid();
+        
+        // Get a reference to the current user's document
+        db.collection("users").document(currentUserId)
+            .get()
+            .addOnSuccessListener(currentUserDoc -> {
+                User currentUser = currentUserDoc.toObject(User.class);
+                if (currentUser == null) {
+                    errorMessage.setValue("Could not load current user data");
+                    return;
+                }
+                
+                // Check if actually following
+                List<String> following = currentUser.getFollowing();
+                if (following == null || !following.contains(userIdToUnfollow)) {
+                    errorMessage.setValue("You are not following this user");
+                    return;
+                }
+                
+                // Remove from current user's following list
+                following.remove(userIdToUnfollow);
+                
+                // Create a final copy of the following list for the transaction
+                final List<String> finalFollowing = new ArrayList<>(following);
+                
+                // Update Firestore in a transaction
+                db.runTransaction(transaction -> {
+                    // Update current user's following list
+                    transaction.update(db.collection("users").document(currentUserId), 
+                            "following", finalFollowing);
+                    
+                    // Update target user's followers list
+                    db.collection("users").document(userIdToUnfollow)
+                        .get()
+                        .addOnSuccessListener(targetUserDoc -> {
+                            User targetUser = targetUserDoc.toObject(User.class);
+                            if (targetUser != null) {
+                                List<String> followers = targetUser.getFollowers();
+                                if (followers != null) {
+                                    followers.remove(currentUserId);
+                                    db.collection("users").document(userIdToUnfollow)
+                                        .update("followers", followers);
+                                }
+                            }
+                        });
+                    
+                    return null;
+                }).addOnSuccessListener(aVoid -> {
+                    // Update local user data
+                    User updatedUser = userData.getValue();
+                    if (updatedUser != null) {
+                        updatedUser.setFollowing(finalFollowing);
+                        userData.setValue(updatedUser);
+                    }
+                    errorMessage.setValue("Unfollowed user");
+                    loadUserData(); // Refresh to get updated counts
+                }).addOnFailureListener(e -> {
+                    errorMessage.setValue("Failed to unfollow user: " + e.getMessage());
+                });
+            })
+            .addOnFailureListener(e -> {
+                errorMessage.setValue("Error loading user data: " + e.getMessage());
+            });
+    }
+
     private boolean isValidUsername(String username) {
-        // Check length
-        if (username.length() < 1 || username.length() > 30) {
-            return false;
-        }
-
-        // Check for spaces
-        if (username.contains(" ")) {
-            return false;
-        }
-
-        // Check for special characters
-        if (!username.matches("^[a-zA-Z0-9._]+$")) {
-            return false;
-        }
-
-        // Check for periods at beginning or end
-        if (username.startsWith(".") || username.endsWith(".")) {
-            return false;
-        }
-
-        return true;
+        // Minimum 3 characters, maximum 30 characters
+        // Only alphanumeric characters, underscores, and periods
+        return username != null && username.matches("^[a-zA-Z0-9_.]{3,30}$");
     }
 
     public LiveData<User> getUserData() {

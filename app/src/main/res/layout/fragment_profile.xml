@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_dark">
@@ -73,9 +74,288 @@
                 android:textSize="16sp"
                 android:fontFamily="sans-serif"
                 android:layout_marginTop="4dp" />
+                
+            <!-- Bio Section -->
+            <LinearLayout
+                android:id="@+id/bio_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="24dp">
+                
+                <!-- Bio Button (when no bio is set) -->
+                <Button
+                    android:id="@+id/add_bio_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="+ Add bio"
+                    android:textColor="@color/white"
+                    android:background="@drawable/rounded_button_outline"
+                    android:padding="12dp"
+                    android:visibility="visible"/>
+                
+                <!-- Bio Text (when bio is set) -->
+                <LinearLayout
+                    android:id="@+id/bio_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+                    
+                    <TextView
+                        android:id="@+id/bio_text"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/white"
+                        android:textSize="16sp"
+                        android:fontFamily="sans-serif"
+                        tools:text="This is my bio" />
+                        
+                    <ImageButton
+                        android:id="@+id/edit_bio_button"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="@android:color/transparent"
+                        android:src="@drawable/ic_edit"
+                        android:contentDescription="Edit Bio"
+                        app:tint="@color/accent" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Location Section -->
+            <LinearLayout
+                android:id="@+id/location_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp">
+                
+                <!-- Location Button (when no location is set) -->
+                <Button
+                    android:id="@+id/add_location_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="+ Add location"
+                    android:textColor="@color/white"
+                    android:background="@drawable/rounded_button_outline"
+                    android:padding="12dp"
+                    android:visibility="visible"/>
+                
+                <!-- Location Text (when location is set) -->
+                <LinearLayout
+                    android:id="@+id/location_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+                    
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_location"
+                        app:tint="@color/white"
+                        android:layout_marginEnd="8dp"/>
+                        
+                    <TextView
+                        android:id="@+id/location_text"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/white"
+                        android:textSize="16sp"
+                        android:fontFamily="sans-serif"
+                        tools:text="New York, USA" />
+                        
+                    <ImageButton
+                        android:id="@+id/edit_location_button"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="@android:color/transparent"
+                        android:src="@drawable/ic_edit"
+                        android:contentDescription="Edit Location"
+                        app:tint="@color/accent" />
+                </LinearLayout>
+            </LinearLayout>
+            
+            <!-- Followers/Following Stats -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="32dp"
+                android:gravity="center">
+                
+                <!-- Posts Count -->
+                <LinearLayout
+                    android:id="@+id/posts_container"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+                    
+                    <TextView
+                        android:id="@+id/post_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="@color/white"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Posts"
+                        android:textColor="@color/system_gray"
+                        android:textSize="16sp"
+                        android:fontFamily="sans-serif" />
+                </LinearLayout>
+                
+                <!-- Friends -->
+                <LinearLayout
+                    android:id="@+id/friends_container"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+                    
+                    <TextView
+                        android:id="@+id/friends_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2"
+                        android:textColor="@color/white"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Friends"
+                        android:textColor="@color/system_gray"
+                        android:textSize="16sp"
+                        android:fontFamily="sans-serif" />
+                </LinearLayout>
+                
+                <!-- Followers -->
+                <LinearLayout
+                    android:id="@+id/followers_container"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+                    
+                    <TextView
+                        android:id="@+id/followers_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="@color/white"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Followers"
+                        android:textColor="@color/system_gray"
+                        android:textSize="16sp"
+                        android:fontFamily="sans-serif" />
+                </LinearLayout>
+                
+                <!-- Following -->
+                <LinearLayout
+                    android:id="@+id/following_container"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+                    
+                    <TextView
+                        android:id="@+id/following_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2"
+                        android:textColor="@color/white"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Following"
+                        android:textColor="@color/system_gray"
+                        android:textSize="16sp"
+                        android:fontFamily="sans-serif" />
+                </LinearLayout>
+            </LinearLayout>
+            
+            <!-- Share Profile Button -->
+            <Button
+                android:id="@+id/share_profile_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:background="@drawable/rounded_button_dark"
+                android:drawableStart="@drawable/ic_share"
+                android:drawablePadding="12dp"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:text="Share Profile"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:gravity="center" />
+                
+            <!-- Add Interests Button -->
+            <Button
+                android:id="@+id/add_interests_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/rounded_button_outline"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:text="+ Add Interests"
+                android:textColor="@color/white"
+                android:textSize="18sp" />
+                
+            <!-- Interests Display Section -->
+            <LinearLayout
+                android:id="@+id/interests_display_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp"
+                android:visibility="gone">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Interests"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+                    
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/interests_chip_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
+    
     <!-- Settings Icon Top Right -->
     <ImageButton
         android:id="@+id/settings_button"

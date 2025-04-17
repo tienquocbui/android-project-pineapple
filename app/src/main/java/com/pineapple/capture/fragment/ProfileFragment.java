@@ -2,6 +2,8 @@ package com.pineapple.capture.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +13,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,6 +30,15 @@ import com.pineapple.capture.R;
 import com.pineapple.capture.activities.LoginActivity;
 import com.pineapple.capture.profile.ProfileViewModel;
 import com.pineapple.capture.models.User;
+import com.pineapple.capture.activities.InterestsActivity;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+import android.app.Activity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import java.util.List;
+import java.util.Arrays;
 
 public class ProfileFragment extends Fragment {
 
@@ -34,6 +47,34 @@ public class ProfileFragment extends Fragment {
     private TextView displayNameText;
     private TextView usernameText;
     private ImageButton editDisplayNameButton;
+    
+    // Bio elements
+    private Button addBioButton;
+    private LinearLayout bioContainer;
+    private TextView bioText;
+    private ImageButton editBioButton;
+    
+    // Location elements
+    private Button addLocationButton;
+    private LinearLayout locationContainer;
+    private TextView locationText;
+    private ImageButton editLocationButton;
+    
+    // Stats elements
+    private TextView friendsCountText;
+    private TextView followersCountText;
+    private TextView followingCountText;
+    private TextView postCountText;
+    
+    // Share profile button
+    private Button shareProfileButton;
+    
+    // Interests button
+    private Button addInterestsButton;
+    private LinearLayout interestsDisplayContainer;
+    private ChipGroup interestsChipGroup;
+
+    private ActivityResultLauncher<Intent> interestsLauncher;
 
     @Nullable
     @Override
@@ -50,24 +91,65 @@ public class ProfileFragment extends Fragment {
         usernameText = view.findViewById(R.id.username);
         editDisplayNameButton = view.findViewById(R.id.edit_display_name_button);
         ImageButton settingsButton = view.findViewById(R.id.settings_button);
+        
+        // Bio views
+        addBioButton = view.findViewById(R.id.add_bio_button);
+        bioContainer = view.findViewById(R.id.bio_container);
+        bioText = view.findViewById(R.id.bio_text);
+        editBioButton = view.findViewById(R.id.edit_bio_button);
+        
+        // Location views
+        addLocationButton = view.findViewById(R.id.add_location_button);
+        locationContainer = view.findViewById(R.id.location_container);
+        locationText = view.findViewById(R.id.location_text);
+        editLocationButton = view.findViewById(R.id.edit_location_button);
+        
+        // Stats views
+        friendsCountText = view.findViewById(R.id.friends_count);
+        followersCountText = view.findViewById(R.id.followers_count);
+        followingCountText = view.findViewById(R.id.following_count);
+        postCountText = view.findViewById(R.id.post_count);
+        
+        // Share profile button
+        shareProfileButton = view.findViewById(R.id.share_profile_button);
+        
+        // Interests views
+        addInterestsButton = view.findViewById(R.id.add_interests_button);
+        interestsDisplayContainer = view.findViewById(R.id.interests_display_container);
+        interestsChipGroup = view.findViewById(R.id.interests_chip_group);
 
         // Set up click listeners
         editDisplayNameButton.setOnClickListener(v -> showEditDisplayNameDialog());
         settingsButton.setOnClickListener(v -> showAccountSettingsBottomSheet());
+        
+        // Bio button listeners
+        addBioButton.setOnClickListener(v -> showEditBioDialog(null));
+        editBioButton.setOnClickListener(v -> showEditBioDialog(bioText.getText().toString()));
+        
+        // Location button listeners
+        addLocationButton.setOnClickListener(v -> showEditLocationDialog(null));
+        editLocationButton.setOnClickListener(v -> showEditLocationDialog(locationText.getText().toString()));
+        
+        // Share profile button listener
+        shareProfileButton.setOnClickListener(v -> shareProfile());
+        
+        // Interests button listener
+        addInterestsButton.setOnClickListener(v -> openInterestsSelection());
+
+        // Register activity result launcher for interests
+        interestsLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    // Reload user data to refresh interests
+                    viewModel.loadUserData();
+                }
+            });
 
         // Observe user data
         viewModel.getUserData().observe(getViewLifecycleOwner(), user -> {
             if (user != null) {
-                displayNameText.setText(user.getDisplayName());
-                usernameText.setText("@" + user.getUsername());
-                
-                // Load profile image using Glide
-                if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
-                    Glide.with(this)
-                            .load(user.getProfilePictureUrl())
-                            .circleCrop()
-                            .into(profileImage);
-                }
+                updateUI(user);
             }
         });
         
@@ -79,6 +161,189 @@ public class ProfileFragment extends Fragment {
         });
 
         return view;
+    }
+    
+    private void updateUI(User user) {
+        // Update basic info
+        displayNameText.setText(user.getDisplayName());
+        usernameText.setText("@" + user.getUsername());
+        
+        // Load profile image using Glide
+        if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
+            Glide.with(this)
+                    .load(user.getProfilePictureUrl())
+                    .circleCrop()
+                    .into(profileImage);
+        }
+        
+        // Update bio
+        if (user.getBio() != null && !user.getBio().isEmpty()) {
+            bioText.setText(user.getBio());
+            bioContainer.setVisibility(View.VISIBLE);
+            addBioButton.setVisibility(View.GONE);
+        } else {
+            bioContainer.setVisibility(View.GONE);
+            addBioButton.setVisibility(View.VISIBLE);
+        }
+        
+        // Update location
+        if (user.getLocation() != null && !user.getLocation().isEmpty()) {
+            locationText.setText(user.getLocation());
+            locationContainer.setVisibility(View.VISIBLE);
+            addLocationButton.setVisibility(View.GONE);
+        } else {
+            locationContainer.setVisibility(View.GONE);
+            addLocationButton.setVisibility(View.VISIBLE);
+        }
+        
+        // Update interests
+        List<String> interests = user.getInterests();
+        if (interests != null && !interests.isEmpty()) {
+            addInterestsButton.setText("Edit Interests (" + interests.size() + ")");
+            displayInterests(interests);
+        } else {
+            addInterestsButton.setText("+ Add Interests");
+            interestsDisplayContainer.setVisibility(View.GONE);
+        }
+        
+        // Update stats
+        friendsCountText.setText(String.valueOf(user.getFriendsCount()));
+        followersCountText.setText(String.valueOf(user.getFollowersCount()));
+        followingCountText.setText(String.valueOf(user.getFollowingCount()));
+        postCountText.setText(String.valueOf(user.getPostCount()));
+    }
+
+    private void displayInterests(List<String> interests) {
+        interestsChipGroup.removeAllViews();
+        interestsDisplayContainer.setVisibility(View.VISIBLE);
+        
+        // Configure chip group
+        interestsChipGroup.setChipSpacingHorizontal(16);
+        interestsChipGroup.setChipSpacingVertical(8);
+        
+        for (int i = 0; i < interests.size(); i++) {
+            String interest = interests.get(i);
+            Chip chip = new Chip(requireContext());
+            chip.setText(interest);
+            
+            // Set up chip styling with a pastel color based on interest category
+            int chipColor = getInterestCategoryColor(interest);
+            
+            chip.setChipBackgroundColorResource(chipColor);
+            chip.setTextColor(getResources().getColor(R.color.black)); // Dark text for better contrast with pastel colors
+            chip.setClickable(false); // No need for chips to be clickable in profile view
+            chip.setElevation(2f); // Add slight elevation
+            chip.setChipCornerRadius(16f); // More rounded corners
+            
+            // Try to set icon based on interest - making sure it's properly visible
+            int iconResId = getInterestIconResource(interest);
+            if (iconResId != 0) {
+                chip.setChipIconResource(iconResId);
+                chip.setChipIconVisible(true);
+                chip.setChipIconSize(24f); // Ensure icon is large enough to be visible
+                chip.setIconEndPadding(4f); // Add padding after icon
+                chip.setIconStartPadding(4f); // Add padding before icon
+                chip.setChipIconTint(null); // Ensure icon is not being tinted/hidden
+            }
+            
+            // Log whether an icon was found for debugging
+            if (iconResId == 0) {
+                Log.d("ProfileFragment", "No icon found for interest: " + interest);
+            } else {
+                Log.d("ProfileFragment", "Icon set for interest: " + interest + " with ID: " + iconResId);
+            }
+            
+            interestsChipGroup.addView(chip);
+        }
+    }
+    
+    /**
+     * Assigns consistent colors to interests based on their category
+     */
+    private int getInterestCategoryColor(String interest) {
+        String lowerInterest = interest.toLowerCase();
+        
+        // Creativity category (orange/yellow)
+        if (Arrays.asList("art", "design", "photography", "crafts", "fashion", "singing", "dancing", "video", "cosplay", "make-up").contains(lowerInterest)) {
+            if (lowerInterest.equals("art")) return R.color.pastel_orange;
+            if (lowerInterest.equals("dancing")) return R.color.pastel_yellow;
+            if (lowerInterest.equals("photography")) return R.color.pastel_orange;
+            if (lowerInterest.equals("singing")) return R.color.pastel_yellow;
+            return R.color.pastel_orange;
+        }
+        
+        // Sports category (blue/green)
+        if (Arrays.asList("badminton", "bouldering", "crew", "baseball", "bowling", "cricket", "basketball", "boxing", "cycling").contains(lowerInterest)) {
+            if (lowerInterest.equals("basketball")) return R.color.pastel_blue;
+            if (lowerInterest.equals("cycling")) return R.color.pastel_green;
+            if (lowerInterest.equals("baseball")) return R.color.pastel_blue;
+            return R.color.pastel_green;
+        }
+        
+        // Pets category (purple/pink)
+        if (Arrays.asList("amphibians", "cats", "horses", "arthropods", "dogs", "rabbits", "birds", "fish", "reptiles", "turtles").contains(lowerInterest)) {
+            if (lowerInterest.equals("cats")) return R.color.pastel_purple;
+            if (lowerInterest.equals("dogs")) return R.color.pastel_pink;
+            if (lowerInterest.equals("birds")) return R.color.pastel_purple;
+            return R.color.pastel_pink;
+        }
+        
+        // Default colors based on first letter for any other interest
+        char firstChar = lowerInterest.charAt(0);
+        switch (firstChar % 8) {
+            case 0: return R.color.pastel_blue;
+            case 1: return R.color.pastel_green;
+            case 2: return R.color.pastel_purple;
+            case 3: return R.color.pastel_pink;
+            case 4: return R.color.pastel_orange;
+            case 5: return R.color.pastel_yellow;
+            case 6: return R.color.pastel_teal;
+            case 7: return R.color.pastel_cyan;
+            default: return R.color.pastel_blue;
+        }
+    }
+    
+    private int getInterestIconResource(String interest) {
+        // Map common interest names to drawable resources
+        String lowerInterest = interest.toLowerCase();
+        
+        // Direct mappings for specific interests
+        if (lowerInterest.equals("art")) return R.drawable.ic_art;
+        if (lowerInterest.equals("dancing")) return R.drawable.ic_dancing;
+        if (lowerInterest.equals("photography")) return R.drawable.ic_photography;
+        if (lowerInterest.equals("singing") || lowerInterest.equals("music")) return R.drawable.ic_music;
+        
+        // Category-based mappings
+        if (lowerInterest.equals("video") || lowerInterest.equals("design") || 
+            lowerInterest.equals("crafts") || lowerInterest.equals("fashion") || 
+            lowerInterest.equals("cosplay") || lowerInterest.equals("make-up")) {
+            return R.drawable.ic_creativity;
+        }
+        
+        if (lowerInterest.equals("badminton") || lowerInterest.equals("bouldering") || 
+            lowerInterest.equals("crew") || lowerInterest.equals("baseball") || 
+            lowerInterest.equals("bowling") || lowerInterest.equals("cricket") || 
+            lowerInterest.equals("basketball") || lowerInterest.equals("boxing") || 
+            lowerInterest.equals("cycling")) {
+            return R.drawable.ic_sports;
+        }
+        
+        if (lowerInterest.equals("amphibians") || lowerInterest.equals("cats") || 
+            lowerInterest.equals("horses") || lowerInterest.equals("arthropods") || 
+            lowerInterest.equals("dogs") || lowerInterest.equals("rabbits") || 
+            lowerInterest.equals("birds") || lowerInterest.equals("fish") || 
+            lowerInterest.equals("reptiles") || lowerInterest.equals("turtles")) {
+            return R.drawable.ic_pets;
+        }
+        
+        // Default icon based on first letter
+        char firstChar = lowerInterest.charAt(0);
+        switch (firstChar % 3) {
+            case 0: return R.drawable.ic_creativity;
+            case 1: return R.drawable.ic_sports;
+            case 2: return R.drawable.ic_pets;
+            default: return R.drawable.ic_favorite;
+        }
     }
 
     private void showEditDisplayNameDialog() {
@@ -130,6 +395,144 @@ public class ProfileFragment extends Fragment {
             });
         });
         dialog.show();
+    }
+    
+    private void showEditBioDialog(String currentBio) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_bio, null);
+        EditText bioInput = dialogView.findViewById(R.id.bio_input);
+        TextView charCountText = dialogView.findViewById(R.id.bio_char_count);
+        
+        if (currentBio != null) {
+            bioInput.setText(currentBio);
+            charCountText.setText(currentBio.length() + "/150");
+        }
+        
+        bioInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                charCountText.setText(s.length() + "/150");
+            }
+        });
+
+        MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Edit Bio")
+                .setView(dialogView)
+                .setPositiveButton("Save", null)
+                .setNegativeButton("Cancel", null);
+
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                String newBio = bioInput.getText().toString().trim();
+                
+                // Show loading state
+                positiveButton.setEnabled(false);
+                bioInput.setEnabled(false);
+
+                viewModel.updateBio(newBio);
+                
+                viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+                    if (message != null && !message.isEmpty()) {
+                        if (message.contains("successfully")) {
+                            dialog.dismiss();
+                        }
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        positiveButton.setEnabled(true);
+                        bioInput.setEnabled(true);
+                    }
+                });
+            });
+        });
+        dialog.show();
+    }
+    
+    private void showEditLocationDialog(String currentLocation) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_location, null);
+        EditText locationInput = dialogView.findViewById(R.id.location_input);
+        TextView charCountText = dialogView.findViewById(R.id.location_char_count);
+        
+        if (currentLocation != null) {
+            locationInput.setText(currentLocation);
+            charCountText.setText(currentLocation.length() + "/50");
+        }
+        
+        locationInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                charCountText.setText(s.length() + "/50");
+            }
+        });
+
+        MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Edit Location")
+                .setView(dialogView)
+                .setPositiveButton("Save", null)
+                .setNegativeButton("Cancel", null);
+
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                String newLocation = locationInput.getText().toString().trim();
+                
+                // Show loading state
+                positiveButton.setEnabled(false);
+                locationInput.setEnabled(false);
+
+                viewModel.updateLocation(newLocation);
+                
+                viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+                    if (message != null && !message.isEmpty()) {
+                        if (message.contains("successfully")) {
+                            dialog.dismiss();
+                        }
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        positiveButton.setEnabled(true);
+                        locationInput.setEnabled(true);
+                    }
+                });
+            });
+        });
+        dialog.show();
+    }
+    
+    private void shareProfile() {
+        User user = viewModel.getUserData().getValue();
+        if (user == null) return;
+        
+        String shareText = "Check out my profile on Capture App!\n\n" +
+                           "Name: " + user.getDisplayName() + "\n" +
+                           "Username: @" + user.getUsername();
+        
+        if (user.getBio() != null && !user.getBio().isEmpty()) {
+            shareText += "\n\nBio: " + user.getBio();
+        }
+        
+        if (user.getLocation() != null && !user.getLocation().isEmpty()) {
+            shareText += "\n\nLocation: " + user.getLocation();
+        }
+        
+        shareText += "\n\nFollowers: " + user.getFollowersCount() + 
+                     " | Following: " + user.getFollowingCount();
+        
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+        
+        startActivity(Intent.createChooser(shareIntent, "Share via"));
     }
 
     private void showEditEmailDialog() {
@@ -366,5 +769,11 @@ public class ProfileFragment extends Fragment {
         });
 
         bottomSheetDialog.show();
+    }
+
+    private void openInterestsSelection() {
+        // Create intent to open InterestsActivity
+        Intent intent = new Intent(requireContext(), InterestsActivity.class);
+        interestsLauncher.launch(intent);
     }
 }

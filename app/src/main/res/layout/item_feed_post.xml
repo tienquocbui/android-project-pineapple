@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="16dp"
@@ -139,6 +140,47 @@
                 android:textSize="14sp"
                 android:lineSpacingExtra="2dp"
                 android:fontFamily="sans-serif"/>
+            
+            <!-- Comments Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp">
+                
+                <!-- Comments header -->
+                <TextView
+                    android:id="@+id/comments_header"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Comments"
+                    android:textColor="@color/system_gray"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:visibility="gone"
+                    tools:visibility="visible"/>
+                
+                <!-- Comments list container -->
+                <LinearLayout
+                    android:id="@+id/comments_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="4dp"/>
+                
+                <!-- View all comments button -->
+                <TextView
+                    android:id="@+id/view_all_comments"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="View all comments"
+                    android:textColor="@color/system_gray"
+                    android:textSize="14sp"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:visibility="gone"
+                    tools:visibility="visible"/>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView> 

@@ -8,6 +8,8 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.Manifest;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -71,6 +73,8 @@ public class CameraFragment extends Fragment {
     private View buttonContainer;
     private com.google.android.material.textfield.TextInputLayout captionLayout;
 
+    private static final int MAX_WORD_COUNT = 50;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -118,6 +122,42 @@ public class CameraFragment extends Fragment {
 
         postButton.setOnClickListener(v -> postToFeed());
 
+        // Add text watcher to limit caption to 50 words
+        captionInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Not needed
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Not needed
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // Count words
+                String input = s.toString().trim();
+                if (input.isEmpty()) return;
+                
+                String[] words = input.split("\\s+");
+                if (words.length > MAX_WORD_COUNT) {
+                    // Truncate to max word count
+                    StringBuilder truncated = new StringBuilder();
+                    for (int i = 0; i < MAX_WORD_COUNT; i++) {
+                        truncated.append(words[i]).append(" ");
+                    }
+                    captionInput.setText(truncated.toString().trim());
+                    captionInput.setSelection(truncated.toString().trim().length());
+                    
+                    Toast.makeText(requireContext(), "Caption limited to 50 words", Toast.LENGTH_SHORT).show();
+                }
+                
+                // Update caption counter if needed
+                captionLayout.setHelperText(words.length + "/" + MAX_WORD_COUNT + " words");
+            }
+        });
+
         startCamera();
 
         return view;
@@ -137,11 +177,14 @@ public class CameraFragment extends Fragment {
                                 : CameraSelector.LENS_FACING_BACK)
                         .build();
 
-                Preview preview = new Preview.Builder().build();
+                Preview preview = new Preview.Builder()
+                        .build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
+                // Configure capture with square aspect ratio
                 imageCapture = new ImageCapture.Builder()
                         .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                        .setTargetAspectRatio(1) // Set a 1:1 aspect ratio for square photos
                         .setFlashMode(flashEnabled ? ImageCapture.FLASH_MODE_ON : ImageCapture.FLASH_MODE_OFF)
                         .build();
 

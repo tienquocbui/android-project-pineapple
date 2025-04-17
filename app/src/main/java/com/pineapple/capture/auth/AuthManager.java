@@ -65,7 +65,9 @@ public class AuthManager {
                                 username, // username
                                 email,
                                 null, // No profile picture initially
-                                displayName
+                                displayName,
+                                "", // Empty bio initially
+                                ""  // Empty location initially
                         );
                         db.collection(USERS_COLLECTION)
                                 .document(firebaseUser.getUid())
