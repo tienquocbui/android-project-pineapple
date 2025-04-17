@@ -15,6 +15,7 @@ public class User {
     private String location;
     private List<String> followers = new ArrayList<>();
     private List<String> following = new ArrayList<>();
+    private int postCount = 0; // Number of posts the user has created
 
     public User() {
         // Required empty constructor for Firestore
@@ -31,6 +32,7 @@ public class User {
         this.location = location;
         this.followers = new ArrayList<>();
         this.following = new ArrayList<>();
+        this.postCount = 0;
     }
 
     @Exclude
@@ -136,5 +138,13 @@ public class User {
             }
         }
         return count;
+    }
+
+    public int getPostCount() {
+        return postCount;
+    }
+
+    public void setPostCount(int postCount) {
+        this.postCount = postCount;
     }
 }

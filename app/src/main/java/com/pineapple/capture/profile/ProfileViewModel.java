@@ -54,11 +54,13 @@ public class ProfileViewModel extends ViewModel {
                             if (user.getDisplayName() == null || user.getDisplayName().isEmpty()) {
                                 user.setDisplayName(currentUser.getDisplayName());
                             }
-                            userData.setValue(user);
+                            
+                            // Fetch post count from Firestore
+                            fetchPostCount(user);
                         } else {
                             errorMessage.setValue("Failed to convert document to User object");
+                            isLoading.setValue(false);
                         }
-                        isLoading.setValue(false);
                     })
                     .addOnFailureListener(e -> {
                         errorMessage.setValue("Failed to load user data: " + e.getMessage());
@@ -68,12 +70,33 @@ public class ProfileViewModel extends ViewModel {
             errorMessage.setValue("No current user found");
         }
     }
+    
+    private void fetchPostCount(User user) {
+        // Query posts collection for documents with matching userId
+        db.collection("posts")
+            .whereEqualTo("userId", user.getId())
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                int count = querySnapshot.size();
+                user.setPostCount(count);
+                
+                // Update UI with the complete user data including post count
+                userData.setValue(user);
+                isLoading.setValue(false);
+            })
+            .addOnFailureListener(e -> {
+                // Still update UI with user data, just without accurate post count
+                userData.setValue(user);
+                errorMessage.setValue("Failed to load post count: " + e.getMessage());
+                isLoading.setValue(false);
+            });
+    }
 
     public void updateEmail(String currentPassword, String newEmail) {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user == null) {
             errorMessage.setValue("No user is currently signed in");
-            return;
+                        return;
         }
 
         // First, re-authenticate the user

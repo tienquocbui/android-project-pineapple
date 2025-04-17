@@ -1,11 +1,7 @@
 package com.pineapple.capture.fragment;
 
-import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -19,7 +15,6 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -55,8 +50,6 @@ import com.pineapple.capture.profile.ProfileViewModel;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -105,16 +98,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         swipeRefreshLayout.setOnRefreshListener(this::loadFeedPosts);
         swipeRefreshLayout.setColorSchemeResources(R.color.primary_blue);
         
-        // Set up AppBarLayout behavior
-        com.google.android.material.appbar.AppBarLayout appBarLayout = root.findViewById(R.id.appbar);
-        if (appBarLayout != null) {
-            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
-                // The more scrolled, the more opaque the background becomes
-                float scrollPercentage = Math.abs(verticalOffset) / (float) appBarLayout1.getTotalScrollRange();
-                updateToolbarAlpha(scrollPercentage);
-            });
-        }
-        
         // Load initial data
         loadFeedPosts();
         
@@ -133,9 +116,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         // Reload posts when fragment becomes visible
         Log.d("HomeFragment", "onResume - reloading posts");
         loadFeedPosts();
-        
-        // Set toolbar appearance on resume
-        updateToolbarAlpha(0f);
     }
 
     public void loadFeedPosts() {
@@ -441,6 +421,14 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
             String commentText = input.getText().toString().trim();
             if (!commentText.isEmpty() && mAuth.getCurrentUser() != null) {
                 addComment(post, commentText);
+                
+                // Find the post's position and force a refresh of that specific item
+                for (int i = 0; i < feedItems.size(); i++) {
+                    if (feedItems.get(i).getId().equals(post.getId())) {
+                        feedAdapter.notifyItemChanged(i);
+                        break;
+                    }
+                }
             } else {
                 Toast.makeText(getContext(), "Comment cannot be empty", Toast.LENGTH_SHORT).show();
             }
@@ -535,8 +523,9 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
             private final ImageButton likeButton;
             private final ImageButton commentButton;
             private final ImageButton shareButton;
-            private final TextView viewAllComments;
+            private final TextView commentsHeader;
             private final LinearLayout commentsContainer;
+            private final TextView viewAllComments;
 
             public FeedViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -550,8 +539,9 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                 likeButton = itemView.findViewById(R.id.like_button);
                 commentButton = itemView.findViewById(R.id.comment_button);
                 shareButton = itemView.findViewById(R.id.share_button);
-                viewAllComments = itemView.findViewById(R.id.view_all_comments);
+                commentsHeader = itemView.findViewById(R.id.comments_header);
                 commentsContainer = itemView.findViewById(R.id.comments_container);
+                viewAllComments = itemView.findViewById(R.id.view_all_comments);
             }
 
             public void bind(FeedItem post, SimpleDateFormat dateFormat) {
@@ -673,6 +663,9 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                     postImage.setVisibility(View.GONE);
                 }
 
+                // Display comments
+                setupComments(post);
+
                 // Update like button icon based on whether the current user has liked the post
                 if (post.isLikedByCurrentUser()) {
                     likeButton.setImageResource(R.drawable.ic_favorite);
@@ -721,129 +714,72 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                         }
                     }
                 });
+            }
 
-                // Handle comments
-                commentsContainer.removeAllViews(); // Clear previous comments
+            private void setupComments(FeedItem post) {
+                // Clear previous comments
+                commentsContainer.removeAllViews();
                 
                 List<Map<String, Object>> comments = post.getComments();
-                if (comments != null && !comments.isEmpty()) {
-                    // Sort comments by timestamp (most recent first)
-                    Comparator<Map<String, Object>> byTimestamp = (o1, o2) -> {
-                        Timestamp t1 = (Timestamp) o1.get("timestamp");
-                        Timestamp t2 = (Timestamp) o2.get("timestamp");
-                        if (t1 == null || t2 == null) return 0;
-                        return t2.compareTo(t1); // Descending order
-                    };
+                if (comments == null || comments.isEmpty()) {
+                    commentsHeader.setVisibility(View.GONE);
+                    commentsContainer.setVisibility(View.GONE);
+                    viewAllComments.setVisibility(View.GONE);
+                    return;
+                }
+                
+                // Show comments header
+                commentsHeader.setVisibility(View.VISIBLE);
+                commentsContainer.setVisibility(View.VISIBLE);
+                
+                // Determine how many comments to show
+                int commentCount = comments.size();
+                int commentsToShow = Math.min(commentCount, 3); // Show up to 3 comments
+                
+                // Show "View all comments" if there are more than 3
+                if (commentCount > 3) {
+                    viewAllComments.setVisibility(View.VISIBLE);
+                    viewAllComments.setText(String.format("View all %d comments", commentCount));
                     
-                    // Create a sorted copy of the comments
-                    List<Map<String, Object>> sortedComments = new ArrayList<>(comments);
-                    try {
-                        Collections.sort(sortedComments, byTimestamp);
-                    } catch (Exception e) {
-                        Log.e("FeedViewHolder", "Error sorting comments", e);
-                    }
-                    
-                    // Show max 2 most recent comments
-                    int commentsToShow = Math.min(sortedComments.size(), 2);
-                    for (int i = 0; i < commentsToShow; i++) {
-                        Map<String, Object> comment = sortedComments.get(i);
-                        addCommentView(comment);
-                    }
-                    
-                    // Show "View all comments" if there are more than shown
-                    if (comments.size() > 2) {
-                        viewAllComments.setVisibility(View.VISIBLE);
-                        viewAllComments.setText(String.format("View all %d comments", comments.size()));
-                        viewAllComments.setOnClickListener(v -> {
-                            // Show comment dialog with all comments
-                            showAllCommentsDialog(post);
-                        });
-                    } else {
+                    // Set click listener to show all comments
+                    viewAllComments.setOnClickListener(v -> {
+                        // Show all comments
+                        commentsContainer.removeAllViews();
+                        for (Map<String, Object> commentData : comments) {
+                            addCommentView(commentData);
+                        }
+                        // Hide the "View all" button since all are now shown
                         viewAllComments.setVisibility(View.GONE);
-                    }
+                    });
                 } else {
                     viewAllComments.setVisibility(View.GONE);
                 }
+                
+                // Add the limited number of comments to the view
+                for (int i = 0; i < commentsToShow; i++) {
+                    Map<String, Object> commentData = comments.get(i);
+                    addCommentView(commentData);
+                }
             }
             
-            private void addCommentView(Map<String, Object> comment) {
-                if (comment == null) return;
-                
+            private void addCommentView(Map<String, Object> commentData) {
+                // Create a new comment view
                 View commentView = LayoutInflater.from(itemView.getContext())
                         .inflate(R.layout.item_comment, commentsContainer, false);
                 
-                TextView usernameText = commentView.findViewById(R.id.comment_username);
-                TextView commentText = commentView.findViewById(R.id.comment_text);
+                // Get views
+                TextView usernameView = commentView.findViewById(R.id.comment_username);
+                TextView textView = commentView.findViewById(R.id.comment_text);
                 
-                String username = (String) comment.get("username");
-                String text = (String) comment.get("text");
+                // Set data
+                String username = (String) commentData.get("username");
+                String text = (String) commentData.get("text");
                 
-                usernameText.setText(username != null ? username : "Anonymous");
-                commentText.setText(text != null ? text : "");
+                usernameView.setText(username != null ? username : "Anonymous");
+                textView.setText(text != null ? text : "");
                 
+                // Add to container
                 commentsContainer.addView(commentView);
-            }
-            
-            private void showAllCommentsDialog(FeedItem post) {
-                Context context = itemView.getContext();
-                if (context == null) return;
-                
-                // Create dialog
-                AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.AppTheme_AlertDialog);
-                builder.setTitle("Comments");
-                
-                // Create scrollable view for comments
-                ScrollView scrollView = new ScrollView(context);
-                LinearLayout commentsList = new LinearLayout(context);
-                commentsList.setOrientation(LinearLayout.VERTICAL);
-                
-                // Add padding
-                int paddingPx = (int) (16 * context.getResources().getDisplayMetrics().density);
-                commentsList.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
-                
-                scrollView.addView(commentsList);
-                
-                // Sort comments by timestamp (most recent first)
-                List<Map<String, Object>> comments = post.getComments();
-                if (comments != null && !comments.isEmpty()) {
-                    Comparator<Map<String, Object>> byTimestamp = (o1, o2) -> {
-                        Timestamp t1 = (Timestamp) o1.get("timestamp");
-                        Timestamp t2 = (Timestamp) o2.get("timestamp");
-                        if (t1 == null || t2 == null) return 0;
-                        return t2.compareTo(t1); // Descending order
-                    };
-                    
-                    // Create a sorted copy of the comments
-                    List<Map<String, Object>> sortedComments = new ArrayList<>(comments);
-                    try {
-                        Collections.sort(sortedComments, byTimestamp);
-                    } catch (Exception e) {
-                        Log.e("FeedViewHolder", "Error sorting comments", e);
-                    }
-                    
-                    // Add all comments to the dialog
-                    for (Map<String, Object> comment : sortedComments) {
-                        View commentView = LayoutInflater.from(context)
-                                .inflate(R.layout.item_comment, commentsList, false);
-                        
-                        TextView usernameText = commentView.findViewById(R.id.comment_username);
-                        TextView commentText = commentView.findViewById(R.id.comment_text);
-                        
-                        String username = (String) comment.get("username");
-                        String text = (String) comment.get("text");
-                        
-                        usernameText.setText(username != null ? username : "Anonymous");
-                        commentText.setText(text != null ? text : "");
-                        
-                        commentsList.addView(commentView);
-                    }
-                }
-                
-                builder.setView(scrollView);
-                builder.setPositiveButton("Close", null);
-                
-                AlertDialog dialog = builder.create();
-                dialog.show();
             }
         }
     }
@@ -855,39 +791,6 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
         } else {
             emptyStateLayout.setVisibility(View.GONE);
             feedRecyclerView.setVisibility(View.VISIBLE);
-        }
-    }
-
-    // Update toolbar transparency based on scroll position
-    private void updateToolbarAlpha(float scrollPercentage) {
-        if (getActivity() == null || getView() == null) return;
-        
-        // Apply consistent semi-transparent background
-        View toolbar = getView().findViewById(R.id.toolbar);
-        View safeAreaPadding = getView().findViewById(R.id.safe_area_top);
-        View divider = getView().findViewById(R.id.toolbar_divider);
-        
-        if (toolbar != null && divider != null && safeAreaPadding != null) {
-            // Semi-transparent background (60% black)
-            int color = Color.argb(153, 0, 0, 0);
-            
-            GradientDrawable toolbarBg = new GradientDrawable();
-            toolbarBg.setColor(color);
-            
-            // Apply background to toolbar and safe area
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                toolbar.setBackground(toolbarBg);
-                
-                GradientDrawable safeBg = new GradientDrawable();
-                safeBg.setColor(color);
-                safeAreaPadding.setBackground(safeBg);
-            } else {
-                toolbar.setBackgroundDrawable(toolbarBg);
-                safeAreaPadding.setBackgroundDrawable(toolbarBg);
-            }
-            
-            // Show divider only when scrolled
-            divider.setAlpha(scrollPercentage);
         }
     }
 }
