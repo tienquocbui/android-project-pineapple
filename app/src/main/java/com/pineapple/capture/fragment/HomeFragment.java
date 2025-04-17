@@ -52,7 +52,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class HomeFragment extends Fragment {
+public class HomeFragment extends Fragment implements OnDeleteClickListener {
     private FragmentHomeBinding binding;
     private ProfileViewModel profileViewModel;
     private RecyclerView feedRecyclerView;
@@ -61,8 +61,6 @@ public class HomeFragment extends Fragment {
     private SwipeRefreshLayout swipeRefreshLayout;
     private View emptyStateLayout;
     private FirebaseFirestore db;
-    private Button createTestPostButton;
-    private Button clearAllPostsButton;
 
     public HomeFragment() {}
 
@@ -76,24 +74,19 @@ public class HomeFragment extends Fragment {
         feedRecyclerView = root.findViewById(R.id.feed_recycler_view);
         swipeRefreshLayout = root.findViewById(R.id.swipe_refresh_layout);
         emptyStateLayout = root.findViewById(R.id.empty_state_layout);
-        clearAllPostsButton = root.findViewById(R.id.clear_all_posts_button);
 
         // Initialize data
         feedItems = new ArrayList<>();
         
         // Setup RecyclerView
         feedRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        feedAdapter = new FeedAdapter(feedItems);
+        feedAdapter = new FeedAdapter(feedItems, this);
         feedAdapter.setHasStableIds(true); // Improve RecyclerView performance
         feedRecyclerView.setAdapter(feedAdapter);
         
         // Initialize Firestore
         db = FirebaseFirestore.getInstance();
-        
-        // Setup clear all posts button
-        if (clearAllPostsButton != null) {
-            clearAllPostsButton.setOnClickListener(v -> deleteAllPosts());
-        }
+
         
         // Set up SwipeRefreshLayout
         swipeRefreshLayout.setOnRefreshListener(this::loadFeedPosts);
@@ -104,6 +97,12 @@ public class HomeFragment extends Fragment {
         
         return root;
     }
+
+    @Override
+    public void onDeleteClick(String postId) {
+        deletePost(postId); // Gọi hàm xoá
+    }
+
 
     @Override
     public void onResume() {
@@ -291,65 +290,6 @@ public class HomeFragment extends Fragment {
             });
     }
 
-    // Add new method to delete all posts
-    private void deleteAllPosts() {
-        swipeRefreshLayout.setRefreshing(true);
-        
-        // Show confirmation dialog
-        new AlertDialog.Builder(requireContext())
-            .setTitle("Delete All Posts")
-            .setMessage("Are you sure you want to delete all posts? This action cannot be undone.")
-            .setPositiveButton("Delete All", (dialog, which) -> {
-                Log.d("HomeFragment", "Deleting all posts...");
-                
-                db.collection("posts")
-                    .get()
-                    .addOnSuccessListener(queryDocumentSnapshots -> {
-                        // Create a batch to perform all deletions in one transaction
-                        WriteBatch batch = db.batch();
-                        final int[] count = {0}; // Use array to make it effectively final
-                        
-                        for (DocumentSnapshot document : queryDocumentSnapshots) {
-                            batch.delete(document.getReference());
-                            count[0]++;
-                        }
-                        
-                        if (count[0] > 0) {
-                            // Execute the batch
-                            batch.commit()
-                                .addOnSuccessListener(aVoid -> {
-                                    Log.d("HomeFragment", "Successfully deleted " + count[0] + " posts");
-                                    Toast.makeText(requireContext(), count[0] + " posts deleted", Toast.LENGTH_SHORT).show();
-                                    
-                                    // Clear local list and update UI
-                                    feedItems.clear();
-                                    feedAdapter.notifyDataSetChanged();
-                                    updateEmptyState();
-                                    swipeRefreshLayout.setRefreshing(false);
-                                })
-                                .addOnFailureListener(e -> {
-                                    Log.e("HomeFragment", "Error deleting posts", e);
-                                    Toast.makeText(requireContext(), "Error deleting posts: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                    swipeRefreshLayout.setRefreshing(false);
-                                });
-                        } else {
-                            Log.d("HomeFragment", "No posts to delete");
-                            Toast.makeText(requireContext(), "No posts to delete", Toast.LENGTH_SHORT).show();
-                            swipeRefreshLayout.setRefreshing(false);
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e("HomeFragment", "Error getting posts to delete", e);
-                        Toast.makeText(requireContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        swipeRefreshLayout.setRefreshing(false);
-                    });
-            })
-            .setNegativeButton("Cancel", (dialog, which) -> {
-                swipeRefreshLayout.setRefreshing(false);
-            })
-            .show();
-    }
-
     private void deletePost(String postId) {
         swipeRefreshLayout.setRefreshing(true);
 
@@ -362,7 +302,7 @@ public class HomeFragment extends Fragment {
                     db.collection("posts")
                             .document(postId)
                             .delete()
-                            .addOnSuccessListener(queryDocumentSnapshots -> {
+                            .addOnSuccessListener(aVoid -> {
                                 Log.d("HomeFragment", "Successfully deleted post: " + postId);
                                 Toast.makeText(requireContext(), "Post deleted", Toast.LENGTH_SHORT).show();
                                 removePostFromList(postId);
@@ -399,14 +339,21 @@ public class HomeFragment extends Fragment {
         private final List<FeedItem> feedItems;
         private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy 'at' h:mm a", Locale.getDefault());
 
-        public FeedAdapter(List<FeedItem> feedItems) {
+        private final OnDeleteClickListener listener;
+
+
+        public FeedAdapter(List<FeedItem> feedItems, OnDeleteClickListener listener) {
             this.feedItems = feedItems;
+            this.listener = listener;
             setHasStableIds(true); // Ensure stable IDs for better RecyclerView performance
         }
-        
+
+
+
+
         @Override
         public long getItemId(int position) {
-            // Use the post ID as the stable ID by hashing it
+            // hash the post id
             FeedItem item = feedItems.get(position);
             return item.getId() != null ? item.getId().hashCode() : position;
         }
@@ -423,6 +370,12 @@ public class HomeFragment extends Fragment {
         public void onBindViewHolder(@NonNull FeedViewHolder holder, int position) {
             FeedItem post = feedItems.get(position);
             holder.bind(post, dateFormat);
+
+            holder.deletePostsButton.setOnClickListener(v -> {
+                if (listener != null && post.getId() != null) {
+                    listener.onDeleteClick(post.getId());
+                }
+            });
         }
 
         @Override
@@ -437,8 +390,7 @@ public class HomeFragment extends Fragment {
             private final ImageView postImage;
             private final TextView timestampText;
             private final TextView likesText;
-            private final ImageButton likeButton, commentButton, shareButton;
-
+            private final ImageButton deletePostsButton;
 
             public FeedViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -448,14 +400,13 @@ public class HomeFragment extends Fragment {
                 postImage = itemView.findViewById(R.id.post_image);
                 timestampText = itemView.findViewById(R.id.timestamp_text);
                 likesText = itemView.findViewById(R.id.likes_text);
-                commentButton = itemView.findViewById(R.id.comment_button);
-                shareButton = itemView.findViewById(R.id.share_button);
-                likeButton = itemView.findViewById(R.id.like_button);
+                deletePostsButton = itemView.findViewById(R.id.delete_button);
             }
 
             public void bind(FeedItem post, SimpleDateFormat dateFormat) {
                 // Set username
                 usernameText.setText(post.getUsername() != null ? post.getUsername() : "Anonymous");
+
                 
                 // Set caption
                 if (post.getContent() != null && !post.getContent().isEmpty()) {
