@@ -57,10 +57,10 @@
             </LinearLayout>
 
             <ImageButton
-                android:id="@+id/more_options_button"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_more"
+                android:id="@+id/delete_button"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_delete"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="More options"
                 app:tint="@color/white"/>
@@ -92,8 +92,8 @@
 
                 <ImageButton
                     android:id="@+id/like_button"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:src="@drawable/ic_favorite_border"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     app:tint="@color/white"
@@ -101,9 +101,8 @@
 
                 <ImageButton
                     android:id="@+id/comment_button"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="16dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:src="@drawable/ic_comment"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     app:tint="@color/white"
@@ -111,9 +110,8 @@
 
                 <ImageButton
                     android:id="@+id/share_button"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="16dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:src="@drawable/ic_share"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     app:tint="@color/white"
