@@ -231,7 +231,7 @@ public class ProfileFragment extends Fragment {
             
             chip.setChipBackgroundColorResource(chipColor);
             chip.setTextColor(getResources().getColor(R.color.black)); // Dark text for better contrast with pastel colors
-            chip.setClickable(false);
+            chip.setClickable(false); // No need for chips to be clickable in profile view
             chip.setElevation(2f); // Add slight elevation
             chip.setChipCornerRadius(16f); // More rounded corners
             
@@ -241,8 +241,8 @@ public class ProfileFragment extends Fragment {
                 chip.setChipIconResource(iconResId);
                 chip.setChipIconVisible(true);
                 chip.setChipIconSize(24f); // Ensure icon is large enough to be visible
-                chip.setIconEndPadding(8f); // Add padding after icon
-                chip.setIconStartPadding(8f); // Add padding before icon
+                chip.setIconEndPadding(4f); // Add padding after icon
+                chip.setIconStartPadding(4f); // Add padding before icon
                 chip.setChipIconTint(null); // Ensure icon is not being tinted/hidden
             }
             

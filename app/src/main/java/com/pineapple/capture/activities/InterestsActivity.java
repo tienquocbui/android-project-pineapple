@@ -1,10 +1,7 @@
 package com.pineapple.capture.activities;
 
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -64,6 +61,7 @@ public class InterestsActivity extends AppCompatActivity {
         selectedCountText = findViewById(R.id.interests_count);
         saveButton = findViewById(R.id.save_button);
         ImageButton backButton = findViewById(R.id.back_button);
+        Button clearAllButton = findViewById(R.id.clear_all_button);
         
         // Initialize interest colors for all possible interests
         for (List<String> interestList : interestCategories.values()) {
@@ -79,6 +77,22 @@ public class InterestsActivity extends AppCompatActivity {
         // Set up click listeners
         backButton.setOnClickListener(v -> finish());
         saveButton.setOnClickListener(v -> saveInterests());
+        
+        // Clear All button functionality
+        clearAllButton.setOnClickListener(v -> {
+            if (!selectedInterests.isEmpty()) {
+                new AlertDialog.Builder(this)
+                    .setTitle("Clear All Interests")
+                    .setMessage("Are you sure you want to remove all selected interests?")
+                    .setPositiveButton("Clear All", (dialog, which) -> {
+                        clearAllInterests();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            } else {
+                Toast.makeText(this, "No interests selected", Toast.LENGTH_SHORT).show();
+            }
+        });
         
         // Add help button functionality
         findViewById(R.id.help_button).setOnClickListener(v -> {
@@ -125,7 +139,7 @@ public class InterestsActivity extends AppCompatActivity {
                 // Use stored color for this interest
                 chip.setTag(interestColors.get(interest));
                 
-                // Set chip click listener
+                // Set chip click listener for both selection and deselection
                 chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
                     if (isChecked) {
                         if (selectedInterests.size() >= MAX_SELECTIONS) {
@@ -150,26 +164,6 @@ public class InterestsActivity extends AppCompatActivity {
                     updateSelectedCount();
                 });
                 
-                // Set long click listener to unselect interests
-                chip.setOnLongClickListener(v -> {
-                    if (selectedInterests.contains(interest)) {
-                        // Add a visual effect for feedback
-                        Animation shake = AnimationUtils.loadAnimation(this, android.R.anim.fade_out);
-                        shake.setDuration(300);
-                        chip.startAnimation(shake);
-                        
-                        // Wait for animation to complete then unselect
-                        new Handler().postDelayed(() -> {
-                            chip.setChecked(false);
-                            Toast.makeText(InterestsActivity.this, 
-                                "'" + interest + "' removed", Toast.LENGTH_SHORT).show();
-                        }, 300);
-                        
-                        return true;
-                    }
-                    return false;
-                });
-                
                 chipGroup.addView(chip);
             }
             
@@ -177,7 +171,7 @@ public class InterestsActivity extends AppCompatActivity {
         }
         
         // After setupInterestCategories method completes, show a tooltip explaining how to unselect
-        Toast.makeText(this, "Tip: Long-press a selected interest to remove it", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Tip: Tap an interest to select/deselect it", Toast.LENGTH_LONG).show();
     }
     
     private void setChipIcon(Chip chip, String interest) {
@@ -218,8 +212,15 @@ public class InterestsActivity extends AppCompatActivity {
     }
     
     private void updateSelectedCount() {
-        selectedCountText.setText("Interests (" + selectedInterests.size() + "/" + MAX_SELECTIONS + ")");
-        saveButton.setEnabled(!selectedInterests.isEmpty());
+        int count = selectedInterests.size();
+        selectedCountText.setText(String.format("%d/%d selected", count, MAX_SELECTIONS));
+        
+        // Show Clear All button only if there are interests selected
+        Button clearAllButton = findViewById(R.id.clear_all_button);
+        clearAllButton.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+        
+        // Enable/disable save button based on whether any interests are selected
+        saveButton.setEnabled(count > 0);
     }
     
     private void loadExistingInterests() {
@@ -229,10 +230,10 @@ public class InterestsActivity extends AppCompatActivity {
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists() && documentSnapshot.contains("interests")) {
                         List<String> userInterests = (List<String>) documentSnapshot.get("interests");
-                        if (userInterests != null) {
+                        if (userInterests != null && !userInterests.isEmpty()) {
                             selectedInterests = new ArrayList<>(userInterests);
                             updateChipSelections();
-                            updateSelectedCount();
+                            updateSelectedCount(); // This will update the Clear All button visibility
                         }
                     }
                 })
@@ -360,8 +361,45 @@ public class InterestsActivity extends AppCompatActivity {
     private void showHelpDialog() {
         new AlertDialog.Builder(this)
             .setTitle("How to Use")
-            .setMessage("• Tap an interest to select it\n• Long-press a selected interest to remove it\n• You can select up to " + MAX_SELECTIONS + " interests\n• Selected interests will appear on your profile")
+            .setMessage("• Tap an interest to select it\n• Tap again to remove it\n• Use 'Clear All' to remove all selections\n• You can select up to " + MAX_SELECTIONS + " interests\n• Selected interests will appear on your profile")
             .setPositiveButton("Got it", null)
             .show();
+    }
+
+    /**
+     * Clears all selected interests
+     */
+    private void clearAllInterests() {
+        // Clear selectedInterests list
+        selectedInterests.clear();
+        
+        // Update all chips to unselected state
+        clearAllChips();
+        
+        // Update UI
+        updateSelectedCount();
+        Toast.makeText(this, "All interests cleared", Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Resets all chips to unselected state
+     */
+    private void clearAllChips() {
+        for (String category : interestCategories.keySet()) {
+            ChipGroup chipGroup = findChipGroupForCategory(category);
+            if (chipGroup != null) {
+                for (int i = 0; i < chipGroup.getChildCount(); i++) {
+                    View child = chipGroup.getChildAt(i);
+                    if (child instanceof Chip) {
+                        Chip chip = (Chip) child;
+                        chip.setChecked(false);
+                        chip.setChipBackgroundColorResource(R.color.background_dark);
+                        chip.setTextColor(getResources().getColor(R.color.white));
+                        chip.setElevation(0f);
+                        chip.setChipCornerRadius(8f);
+                    }
+                }
+            }
+        }
     }
 } 
