@@ -573,9 +573,10 @@ public class HomeFragment extends Fragment implements OnDeleteClickListener {
                 likesText.setText(String.format(Locale.getDefault(), "%d likes", post.getLikes()));
 
                 // Load profile image
-                if (post.getProfilePictureUrl() != null && !post.getProfilePictureUrl().isEmpty()) {
+                String profileUrl = post.getProfilePictureUrl();
+                if (profileUrl != null && !profileUrl.isEmpty()) {
                     Glide.with(itemView.getContext())
-                            .load(post.getProfilePictureUrl())
+                            .load(profileUrl)
                             .placeholder(R.drawable.ic_person)
                             .error(R.drawable.ic_person)
                             .circleCrop()

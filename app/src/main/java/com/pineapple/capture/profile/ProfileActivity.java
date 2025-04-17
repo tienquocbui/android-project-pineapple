@@ -36,9 +36,10 @@ public class ProfileActivity extends AppCompatActivity {
                 userEmail.setText(user.getEmail());
                 
                 // Load profile image using Glide
-                if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
+                String profileUrl = user.getPrimaryProfilePictureUrl();
+                if (profileUrl != null && !profileUrl.isEmpty()) {
                     Glide.with(this)
-                            .load(user.getProfilePictureUrl())
+                            .load(profileUrl)
                             .circleCrop()
                             .into(profileImage);
                 }

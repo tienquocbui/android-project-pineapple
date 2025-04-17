@@ -70,6 +70,18 @@ public class User {
         this.profilePictureUrl = profilePictureUrl;
     }
 
+    /**
+     * Convenience method to get the primary profile picture URL
+     * @return The primary profile picture URL or empty string if none exists
+     */
+    @Exclude
+    public String getPrimaryProfilePictureUrl() {
+        if (profilePictureUrl == null || profilePictureUrl.isEmpty()) {
+            return "";
+        }
+        return profilePictureUrl.get(0);
+    }
+
     public String getDisplayName() {
         return displayName;
     }

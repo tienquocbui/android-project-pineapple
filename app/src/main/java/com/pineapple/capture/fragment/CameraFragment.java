@@ -55,8 +55,9 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class CameraFragment extends Fragment {
 
@@ -364,12 +365,16 @@ public class CameraFragment extends Fragment {
             .get()
             .addOnSuccessListener(documentSnapshot -> {
                 if (documentSnapshot.exists()) {
-                    String profilePictureUrl = documentSnapshot.getString("profilePictureUrl");
-                    String username = documentSnapshot.getString("username");
+                    // Get profile URL from the user document
+                    List<String> profilePictureUrls = (List<String>) documentSnapshot.get("profilePictureUrl");
+                    String profilePictureUrl = "";
                     
-                    if (profilePictureUrl == null) {
-                        profilePictureUrl = ""; // Default empty string if no profile picture
+                    // Extract the primary profile picture if available
+                    if (profilePictureUrls != null && !profilePictureUrls.isEmpty()) {
+                        profilePictureUrl = profilePictureUrls.get(0);
                     }
+                    
+                    String username = documentSnapshot.getString("username");
                     
                     if (username == null || username.isEmpty()) {
                         username = "Anonymous"; // Default username if not set
