@@ -2,6 +2,8 @@ package com.pineapple.capture.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +13,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -34,6 +37,26 @@ public class ProfileFragment extends Fragment {
     private TextView displayNameText;
     private TextView usernameText;
     private ImageButton editDisplayNameButton;
+    
+    // Bio elements
+    private Button addBioButton;
+    private LinearLayout bioContainer;
+    private TextView bioText;
+    private ImageButton editBioButton;
+    
+    // Location elements
+    private Button addLocationButton;
+    private LinearLayout locationContainer;
+    private TextView locationText;
+    private ImageButton editLocationButton;
+    
+    // Stats elements
+    private TextView friendsCountText;
+    private TextView followersCountText;
+    private TextView followingCountText;
+    
+    // Share profile button
+    private Button shareProfileButton;
 
     @Nullable
     @Override
@@ -50,24 +73,46 @@ public class ProfileFragment extends Fragment {
         usernameText = view.findViewById(R.id.username);
         editDisplayNameButton = view.findViewById(R.id.edit_display_name_button);
         ImageButton settingsButton = view.findViewById(R.id.settings_button);
+        
+        // Bio views
+        addBioButton = view.findViewById(R.id.add_bio_button);
+        bioContainer = view.findViewById(R.id.bio_container);
+        bioText = view.findViewById(R.id.bio_text);
+        editBioButton = view.findViewById(R.id.edit_bio_button);
+        
+        // Location views
+        addLocationButton = view.findViewById(R.id.add_location_button);
+        locationContainer = view.findViewById(R.id.location_container);
+        locationText = view.findViewById(R.id.location_text);
+        editLocationButton = view.findViewById(R.id.edit_location_button);
+        
+        // Stats views
+        friendsCountText = view.findViewById(R.id.friends_count);
+        followersCountText = view.findViewById(R.id.followers_count);
+        followingCountText = view.findViewById(R.id.following_count);
+        
+        // Share profile button
+        shareProfileButton = view.findViewById(R.id.share_profile_button);
 
         // Set up click listeners
         editDisplayNameButton.setOnClickListener(v -> showEditDisplayNameDialog());
         settingsButton.setOnClickListener(v -> showAccountSettingsBottomSheet());
+        
+        // Bio button listeners
+        addBioButton.setOnClickListener(v -> showEditBioDialog(null));
+        editBioButton.setOnClickListener(v -> showEditBioDialog(bioText.getText().toString()));
+        
+        // Location button listeners
+        addLocationButton.setOnClickListener(v -> showEditLocationDialog(null));
+        editLocationButton.setOnClickListener(v -> showEditLocationDialog(locationText.getText().toString()));
+        
+        // Share profile button listener
+        shareProfileButton.setOnClickListener(v -> shareProfile());
 
         // Observe user data
         viewModel.getUserData().observe(getViewLifecycleOwner(), user -> {
             if (user != null) {
-                displayNameText.setText(user.getDisplayName());
-                usernameText.setText("@" + user.getUsername());
-                
-                // Load profile image using Glide
-                if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
-                    Glide.with(this)
-                            .load(user.getProfilePictureUrl())
-                            .circleCrop()
-                            .into(profileImage);
-                }
+                updateUI(user);
             }
         });
         
@@ -79,6 +124,45 @@ public class ProfileFragment extends Fragment {
         });
 
         return view;
+    }
+    
+    private void updateUI(User user) {
+        // Update basic info
+        displayNameText.setText(user.getDisplayName());
+        usernameText.setText("@" + user.getUsername());
+        
+        // Load profile image using Glide
+        if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
+            Glide.with(this)
+                    .load(user.getProfilePictureUrl())
+                    .circleCrop()
+                    .into(profileImage);
+        }
+        
+        // Update bio
+        if (user.getBio() != null && !user.getBio().isEmpty()) {
+            bioText.setText(user.getBio());
+            bioContainer.setVisibility(View.VISIBLE);
+            addBioButton.setVisibility(View.GONE);
+        } else {
+            bioContainer.setVisibility(View.GONE);
+            addBioButton.setVisibility(View.VISIBLE);
+        }
+        
+        // Update location
+        if (user.getLocation() != null && !user.getLocation().isEmpty()) {
+            locationText.setText(user.getLocation());
+            locationContainer.setVisibility(View.VISIBLE);
+            addLocationButton.setVisibility(View.GONE);
+        } else {
+            locationContainer.setVisibility(View.GONE);
+            addLocationButton.setVisibility(View.VISIBLE);
+        }
+        
+        // Update stats
+        friendsCountText.setText(String.valueOf(user.getFriendsCount()));
+        followersCountText.setText(String.valueOf(user.getFollowersCount()));
+        followingCountText.setText(String.valueOf(user.getFollowingCount()));
     }
 
     private void showEditDisplayNameDialog() {
@@ -130,6 +214,144 @@ public class ProfileFragment extends Fragment {
             });
         });
         dialog.show();
+    }
+    
+    private void showEditBioDialog(String currentBio) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_bio, null);
+        EditText bioInput = dialogView.findViewById(R.id.bio_input);
+        TextView charCountText = dialogView.findViewById(R.id.bio_char_count);
+        
+        if (currentBio != null) {
+            bioInput.setText(currentBio);
+            charCountText.setText(currentBio.length() + "/150");
+        }
+        
+        bioInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                charCountText.setText(s.length() + "/150");
+            }
+        });
+
+        MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Edit Bio")
+                .setView(dialogView)
+                .setPositiveButton("Save", null)
+                .setNegativeButton("Cancel", null);
+
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                String newBio = bioInput.getText().toString().trim();
+                
+                // Show loading state
+                positiveButton.setEnabled(false);
+                bioInput.setEnabled(false);
+
+                viewModel.updateBio(newBio);
+                
+                viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+                    if (message != null && !message.isEmpty()) {
+                        if (message.contains("successfully")) {
+                            dialog.dismiss();
+                        }
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        positiveButton.setEnabled(true);
+                        bioInput.setEnabled(true);
+                    }
+                });
+            });
+        });
+        dialog.show();
+    }
+    
+    private void showEditLocationDialog(String currentLocation) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_location, null);
+        EditText locationInput = dialogView.findViewById(R.id.location_input);
+        TextView charCountText = dialogView.findViewById(R.id.location_char_count);
+        
+        if (currentLocation != null) {
+            locationInput.setText(currentLocation);
+            charCountText.setText(currentLocation.length() + "/50");
+        }
+        
+        locationInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                charCountText.setText(s.length() + "/50");
+            }
+        });
+
+        MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Edit Location")
+                .setView(dialogView)
+                .setPositiveButton("Save", null)
+                .setNegativeButton("Cancel", null);
+
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                String newLocation = locationInput.getText().toString().trim();
+                
+                // Show loading state
+                positiveButton.setEnabled(false);
+                locationInput.setEnabled(false);
+
+                viewModel.updateLocation(newLocation);
+                
+                viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+                    if (message != null && !message.isEmpty()) {
+                        if (message.contains("successfully")) {
+                            dialog.dismiss();
+                        }
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        positiveButton.setEnabled(true);
+                        locationInput.setEnabled(true);
+                    }
+                });
+            });
+        });
+        dialog.show();
+    }
+    
+    private void shareProfile() {
+        User user = viewModel.getUserData().getValue();
+        if (user == null) return;
+        
+        String shareText = "Check out my profile on Capture App!\n\n" +
+                           "Name: " + user.getDisplayName() + "\n" +
+                           "Username: @" + user.getUsername();
+        
+        if (user.getBio() != null && !user.getBio().isEmpty()) {
+            shareText += "\n\nBio: " + user.getBio();
+        }
+        
+        if (user.getLocation() != null && !user.getLocation().isEmpty()) {
+            shareText += "\n\nLocation: " + user.getLocation();
+        }
+        
+        shareText += "\n\nFollowers: " + user.getFollowersCount() + 
+                     " | Following: " + user.getFollowingCount();
+        
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+        
+        startActivity(Intent.createChooser(shareIntent, "Share via"));
     }
 
     private void showEditEmailDialog() {
