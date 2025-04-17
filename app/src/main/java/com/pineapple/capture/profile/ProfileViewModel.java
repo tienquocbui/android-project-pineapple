@@ -34,7 +34,7 @@ public class ProfileViewModel extends ViewModel {
         loadUserData();
     }
 
-    private void loadUserData() {
+    public void loadUserData() {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
             isLoading.setValue(true);
@@ -350,6 +350,30 @@ public class ProfileViewModel extends ViewModel {
             })
             .addOnFailureListener(e -> {
                 errorMessage.setValue("Failed to update location: " + e.getMessage());
+            });
+    }
+
+    public void updateInterests(List<String> interests) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            errorMessage.setValue("No user is currently signed in");
+            return;
+        }
+
+        // Update interests in Firestore
+        db.collection("users").document(user.getUid())
+            .update("interests", interests)
+            .addOnSuccessListener(aVoid -> {
+                // Update the local user data
+                User currentUser = userData.getValue();
+                if (currentUser != null) {
+                    currentUser.setInterests(interests);
+                    userData.setValue(currentUser);
+                }
+                errorMessage.setValue("Interests updated successfully");
+            })
+            .addOnFailureListener(e -> {
+                errorMessage.setValue("Failed to update interests: " + e.getMessage());
             });
     }
 

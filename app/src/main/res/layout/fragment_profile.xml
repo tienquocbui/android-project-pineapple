@@ -300,41 +300,59 @@
             </LinearLayout>
             
             <!-- Share Profile Button -->
-            <LinearLayout
+            <Button
+                android:id="@+id/share_profile_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:orientation="horizontal"
-                android:gravity="center">
+                android:background="@drawable/rounded_button_dark"
+                android:drawableStart="@drawable/ic_share"
+                android:drawablePadding="12dp"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:text="Share Profile"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:gravity="center" />
                 
-                <Button
-                    android:id="@+id/share_profile_button"
+            <!-- Add Interests Button -->
+            <Button
+                android:id="@+id/add_interests_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/rounded_button_outline"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:text="+ Add Interests"
+                android:textColor="@color/white"
+                android:textSize="18sp" />
+                
+            <!-- Interests Display Section -->
+            <LinearLayout
+                android:id="@+id/interests_display_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp"
+                android:visibility="gone">
+                
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/rounded_button_dark"
-                    android:text="Share Profile"
-                    android:drawableStart="@drawable/ic_share"
-                    android:drawablePadding="12dp"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
+                    android:text="Interests"
                     android:textColor="@color/white"
                     android:textSize="18sp"
-                    android:gravity="center" />
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+                    
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/interests_chip_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp" />
             </LinearLayout>
-            
-            <!-- User's Posts Section (placeholder) -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Posts"
-                android:textColor="@color/white"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:layout_marginTop="32dp"
-                android:layout_marginBottom="16dp"/>
-                
-            <!-- RecyclerView for user's posts would go here -->
-                
+
         </LinearLayout>
     </ScrollView>
     

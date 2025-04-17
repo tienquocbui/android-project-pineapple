@@ -15,6 +15,7 @@ public class User {
     private String location;
     private List<String> followers = new ArrayList<>();
     private List<String> following = new ArrayList<>();
+    private List<String> interests = new ArrayList<>();
     private int postCount = 0; // Number of posts the user has created
 
     public User() {
@@ -32,6 +33,7 @@ public class User {
         this.location = location;
         this.followers = new ArrayList<>();
         this.following = new ArrayList<>();
+        this.interests = new ArrayList<>();
         this.postCount = 0;
     }
 
@@ -146,5 +148,16 @@ public class User {
 
     public void setPostCount(int postCount) {
         this.postCount = postCount;
+    }
+
+    public List<String> getInterests() {
+        if (interests == null) {
+            interests = new ArrayList<>();
+        }
+        return interests;
+    }
+
+    public void setInterests(List<String> interests) {
+        this.interests = interests;
     }
 }
