@@ -19,17 +19,15 @@ public class FeedItem {
     private Timestamp timestamp;
     
     private int likes;
-    private List<String> likedBy;  // List of user IDs who liked this post
-    private List<Map<String, Object>> comments;  // List of comments
+    private List<String> likedBy;
+    private List<Map<String, Object>> comments;
     private String profilePictureUrl;
     private String username;
     
     @Exclude
-    private boolean isLikedByCurrentUser;  // Not stored in Firestore, used for UI
+    private boolean isLikedByCurrentUser;
 
-    // Required empty constructor for Firestore
     public FeedItem() {
-        // Default likes to 0
         this.likes = 0;
         this.likedBy = new ArrayList<>();
         this.comments = new ArrayList<>();
@@ -40,7 +38,7 @@ public class FeedItem {
         this.userId = userId;
         this.content = content;
         this.imageUrl = imageUrl;
-        this.timestamp = Timestamp.now(); // Will be overridden by server timestamp
+        this.timestamp = Timestamp.now();
         this.likes = 0;
         this.likedBy = new ArrayList<>();
         this.comments = new ArrayList<>();
@@ -64,7 +62,6 @@ public class FeedItem {
         return map;
     }
 
-    // Add a comment to the post
     public void addComment(String userId, String username, String text) {
         if (comments == null) {
             comments = new ArrayList<>();
@@ -79,7 +76,6 @@ public class FeedItem {
         comments.add(comment);
     }
     
-    // Toggle like status for a user
     public boolean toggleLike(String userId) {
         if (likedBy == null) {
             likedBy = new ArrayList<>();
@@ -90,17 +86,15 @@ public class FeedItem {
             likedBy.remove(userId);
             likes = Math.max(0, likes - 1);
             isLikedByCurrentUser = false;
-            return false; // Returning false for unliked
+            return false;
         } else {
-            // User hasn't liked, so add like
             likedBy.add(userId);
             likes += 1;
             isLikedByCurrentUser = true;
-            return true; // Returning true for liked
+            return true;
         }
     }
     
-    // Check if a specific user has liked this post
     public boolean isLikedBy(String userId) {
         return likedBy != null && likedBy.contains(userId);
     }
@@ -119,7 +113,6 @@ public class FeedItem {
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     
     public Timestamp getTimestamp() { 
-        // Ensure timestamp is never null
         if (timestamp == null) {
             timestamp = Timestamp.now();
         }
@@ -128,7 +121,6 @@ public class FeedItem {
     
     public void setTimestamp(Timestamp timestamp) { this.timestamp = timestamp; }
     
-    // Convenience method to get Date from Timestamp
     public Date getTimestampAsDate() {
         if (timestamp == null) {
             return new Date();

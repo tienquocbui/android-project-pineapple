@@ -24,7 +24,6 @@ public class LoginActivity extends AppCompatActivity {
         
         authManager = AuthManager.getInstance();
 
-        // Check if user is already logged in
         if (authManager.getCurrentUser() != null) {
             startMainActivity();
             finish();

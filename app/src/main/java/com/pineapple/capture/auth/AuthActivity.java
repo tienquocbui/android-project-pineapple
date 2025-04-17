@@ -33,7 +33,6 @@ public class AuthActivity extends AppCompatActivity {
         
         authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
         
-        // Initialize views
         usernameInput = findViewById(R.id.username_input);
         passwordInput = findViewById(R.id.password_input);
         loginButton = findViewById(R.id.login_button);
@@ -41,13 +40,10 @@ public class AuthActivity extends AppCompatActivity {
         errorText = findViewById(R.id.error_text);
         resetPasswordLink = findViewById(R.id.reset_password_link);
 
-
-        // Set up click listeners
         loginButton.setOnClickListener(v -> handleLogin());
         signupButton.setOnClickListener(v -> handleSignup());
         resetPasswordLink.setOnClickListener(v -> handleResetPassword());
         
-        // Observe authentication state changes
         authViewModel.getAuthState().observe(this, isAuthenticated -> {
             if (isAuthenticated) {
                 startActivity(new Intent(this, MainActivity.class));
@@ -55,7 +51,6 @@ public class AuthActivity extends AppCompatActivity {
             }
         });
         
-        // Observe error messages
         authViewModel.getErrorMessage().observe(this, error -> {
             if (error != null && !error.isEmpty()) {
                 errorText.setText(error);
