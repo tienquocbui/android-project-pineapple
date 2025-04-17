@@ -27,6 +27,7 @@ import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
+import androidx.camera.core.AspectRatio;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
@@ -184,7 +185,7 @@ public class CameraFragment extends Fragment {
                 // Configure capture with square aspect ratio
                 imageCapture = new ImageCapture.Builder()
                         .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                        .setTargetAspectRatio(1) // Set a 1:1 aspect ratio for square photos
+                        .setTargetAspectRatio(AspectRatio.RATIO_4_3) // Set a 4:3 aspect ratio for photos
                         .setFlashMode(flashEnabled ? ImageCapture.FLASH_MODE_ON : ImageCapture.FLASH_MODE_OFF)
                         .build();
 
