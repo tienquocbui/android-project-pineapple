@@ -15,7 +15,6 @@ import com.pineapple.capture.MainActivity;
 import com.pineapple.capture.R;
 
 
-
 public class AuthActivity extends AppCompatActivity {
     private AuthViewModel authViewModel;
     private TextInputEditText usernameInput;
