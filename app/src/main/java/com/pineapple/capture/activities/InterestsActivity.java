@@ -78,6 +78,11 @@ public class InterestsActivity extends AppCompatActivity {
         backButton.setOnClickListener(v -> finish());
         saveButton.setOnClickListener(v -> saveInterests());
         
+        // Add help button functionality
+        findViewById(R.id.help_button).setOnClickListener(v -> {
+            showHelpDialog();
+        });
+        
         // Clear All button functionality
         clearAllButton.setOnClickListener(v -> {
             if (!selectedInterests.isEmpty()) {
@@ -92,11 +97,6 @@ public class InterestsActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "No interests selected", Toast.LENGTH_SHORT).show();
             }
-        });
-        
-        // Add help button functionality
-        findViewById(R.id.help_button).setOnClickListener(v -> {
-            showHelpDialog();
         });
         
         // Load existing interests if any
@@ -218,6 +218,11 @@ public class InterestsActivity extends AppCompatActivity {
         // Show Clear All button only if there are interests selected
         Button clearAllButton = findViewById(R.id.clear_all_button);
         clearAllButton.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+        
+        // Set Clear All button style to be different from Save button
+        if (count > 0) {
+            clearAllButton.setBackgroundResource(R.drawable.rounded_button_secondary);
+        }
         
         // Enable/disable save button based on whether any interests are selected
         saveButton.setEnabled(count > 0);
