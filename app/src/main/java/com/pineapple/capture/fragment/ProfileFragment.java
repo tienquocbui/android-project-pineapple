@@ -1,7 +1,9 @@
 package com.pineapple.capture.fragment;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -15,14 +17,22 @@ import android.widget.Toast;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.util.Log;
+import android.content.pm.PackageManager;
+import android.Manifest;
+import android.os.Environment;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
+import androidx.core.app.ActivityCompat;
 
 import com.bumptech.glide.Glide;
+import com.cloudinary.android.callback.ErrorInfo;
+import com.cloudinary.android.callback.UploadCallback;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
@@ -31,14 +41,22 @@ import com.pineapple.capture.activities.LoginActivity;
 import com.pineapple.capture.profile.ProfileViewModel;
 import com.pineapple.capture.models.User;
 import com.pineapple.capture.activities.InterestsActivity;
+import com.pineapple.capture.utils.CloudinaryManager;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import android.app.Activity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Arrays;
+import java.util.Locale;
+import android.graphics.Bitmap;
 
 public class ProfileFragment extends Fragment {
 
@@ -75,6 +93,14 @@ public class ProfileFragment extends Fragment {
     private ChipGroup interestsChipGroup;
 
     private ActivityResultLauncher<Intent> interestsLauncher;
+    private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private ActivityResultLauncher<Intent> cameraLauncher;
+    private ActivityResultLauncher<String> cameraPermissionLauncher;
+    private ActivityResultLauncher<String> galleryPermissionLauncher;
+    
+    private Uri photoURI;
+    private static final int CAMERA_PERMISSION_CODE = 100;
+    private static final int STORAGE_PERMISSION_CODE = 101;
 
     @Nullable
     @Override
@@ -87,6 +113,7 @@ public class ProfileFragment extends Fragment {
 
         // Initialize views
         profileImage = view.findViewById(R.id.profile_image);
+        profileImage.setOnClickListener(v -> showImageSourceOptions());
         displayNameText = view.findViewById(R.id.display_name);
         usernameText = view.findViewById(R.id.username);
         editDisplayNameButton = view.findViewById(R.id.edit_display_name_button);
@@ -145,6 +172,68 @@ public class ProfileFragment extends Fragment {
                     viewModel.loadUserData();
                 }
             });
+            
+        // Register activity result launcher for image picker (gallery)
+        imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Uri selectedImageUri = result.getData().getData();
+                    if (selectedImageUri != null) {
+                        uploadProfileImage(selectedImageUri);
+                    }
+                }
+            });
+            
+        // Register activity result launcher for camera
+        cameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    if (photoURI != null) {
+                        // Camera intent with file URI was used
+                        uploadProfileImage(photoURI);
+                    } else if (result.getData() != null && result.getData().getExtras() != null) {
+                        // Basic camera intent was used, which returns a thumbnail bitmap
+                        Bundle extras = result.getData().getExtras();
+                        Bitmap imageBitmap = (Bitmap) extras.get("data");
+                        
+                        if (imageBitmap != null) {
+                            // Save bitmap to file and get URI
+                            Uri imageUri = saveBitmapToFile(imageBitmap);
+                            if (imageUri != null) {
+                                uploadProfileImage(imageUri);
+                            }
+                        } else {
+                            Toast.makeText(requireContext(), "Failed to capture image", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+            });
+            
+        // Register camera permission launcher
+        cameraPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    // Camera permission granted
+                    openCamera();
+                } else {
+                    Toast.makeText(requireContext(), "Camera permission denied", Toast.LENGTH_SHORT).show();
+                }
+            });
+            
+        // Register gallery permission launcher
+        galleryPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    // Gallery permission granted
+                    openGallery();
+                } else {
+                    Toast.makeText(requireContext(), "Storage permission denied", Toast.LENGTH_SHORT).show();
+                }
+            });
 
         // Observe user data
         viewModel.getUserData().observe(getViewLifecycleOwner(), user -> {
@@ -169,9 +258,10 @@ public class ProfileFragment extends Fragment {
         usernameText.setText("@" + user.getUsername());
         
         // Load profile image using Glide
-        if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
+        String profileUrl = user.getPrimaryProfilePictureUrl();
+        if (profileUrl != null && !profileUrl.isEmpty()) {
             Glide.with(this)
-                    .load(user.getProfilePictureUrl())
+                    .load(profileUrl)
                     .circleCrop()
                     .into(profileImage);
         }
@@ -775,5 +865,219 @@ public class ProfileFragment extends Fragment {
         // Create intent to open InterestsActivity
         Intent intent = new Intent(requireContext(), InterestsActivity.class);
         interestsLauncher.launch(intent);
+    }
+
+    /**
+     * Shows a dialog with options to take a photo or choose from gallery
+     */
+    private void showImageSourceOptions() {
+        final CharSequence[] options = {"Take Photo", "Choose from Gallery", "Cancel"};
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Choose Profile Picture");
+        
+        builder.setItems(options, (dialog, item) -> {
+            if (options[item].equals("Take Photo")) {
+                checkCameraPermission();
+            } else if (options[item].equals("Choose from Gallery")) {
+                checkStoragePermission();
+            } else if (options[item].equals("Cancel")) {
+                dialog.dismiss();
+            }
+        });
+        
+        builder.show();
+    }
+    
+    /**
+     * Check if camera permission is granted, request if not
+     */
+    private void checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) 
+                != PackageManager.PERMISSION_GRANTED) {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+        } else {
+            openCamera();
+        }
+    }
+    
+    /**
+     * Check if storage permission is granted, request if not
+     */
+    private void checkStoragePermission() {
+        // For Android 13+ (API level 33 and higher)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_MEDIA_IMAGES) 
+                    != PackageManager.PERMISSION_GRANTED) {
+                galleryPermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES);
+            } else {
+                openGallery();
+            }
+        } else {
+            // For Android 12 and below
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) 
+                    != PackageManager.PERMISSION_GRANTED) {
+                galleryPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+            } else {
+                openGallery();
+            }
+        }
+    }
+    
+    /**
+     * Opens the camera to take a profile picture
+     */
+    private void openCamera() {
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        
+        // Create the file where the photo should go
+        File photoFile = null;
+        try {
+            photoFile = createImageFile();
+        } catch (IOException ex) {
+            // Error occurred while creating the File
+            Toast.makeText(requireContext(), "Error creating image file", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Continue only if the file was successfully created
+        if (photoFile != null) {
+            try {
+                photoURI = FileProvider.getUriForFile(requireContext(),
+                        "com.pineapple.capture.fileprovider",
+                        photoFile);
+                
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                
+                // Try to launch the camera intent
+                try {
+                    cameraLauncher.launch(cameraIntent);
+                } catch (Exception e) {
+                    Log.e("ProfileFragment", "Error launching camera: " + e.getMessage());
+                    Toast.makeText(requireContext(), "Error launching camera: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    
+                    // Fallback to basic camera intent without file URI
+                    Log.d("ProfileFragment", "Camera intent couldn't be resolved, trying basic intent");
+                    Intent basicCameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    
+                    // Clear photoURI to indicate we're using the basic intent
+                    photoURI = null;
+                    
+                    cameraLauncher.launch(basicCameraIntent);
+                }
+            } catch (Exception e) {
+                Log.e("ProfileFragment", "Error launching camera: " + e.getMessage());
+                Toast.makeText(requireContext(), "Error launching camera: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    
+    /**
+     * Save bitmap to file and return its URI
+     */
+    private Uri saveBitmapToFile(Bitmap bitmap) {
+        File imagesDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        File imageFile = new File(imagesDir, "JPEG_" + timeStamp + ".jpg");
+        
+        try {
+            java.io.FileOutputStream fos = new java.io.FileOutputStream(imageFile);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+            fos.flush();
+            fos.close();
+            
+            return FileProvider.getUriForFile(requireContext(),
+                    "com.pineapple.capture.fileprovider",
+                    imageFile);
+        } catch (Exception e) {
+            Log.e("ProfileFragment", "Error saving bitmap: " + e.getMessage());
+            Toast.makeText(requireContext(), "Error saving image", Toast.LENGTH_SHORT).show();
+            return null;
+        }
+    }
+    
+    /**
+     * Creates a temporary file for storing camera photos
+     */
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        
+        return File.createTempFile(
+            imageFileName,  /* prefix */
+            ".jpg",         /* suffix */
+            storageDir      /* directory */
+        );
+    }
+    
+    /**
+     * Opens the gallery to select a profile picture
+     */
+    private void openGallery() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        imagePickerLauncher.launch(intent);
+    }
+    
+    /**
+     * Uploads the selected image to Cloudinary and updates the user's profile
+     */
+    private void uploadProfileImage(Uri imageUri) {
+        // Show loading indicator or toast
+        Toast.makeText(requireContext(), "Uploading profile picture...", Toast.LENGTH_SHORT).show();
+        
+        // Initialize Cloudinary
+        CloudinaryManager.init(requireContext());
+        
+        // Upload the image to Cloudinary
+        CloudinaryManager.uploadImage(imageUri, new UploadCallback() {
+            @Override
+            public void onStart(String requestId) {
+                Log.d("ProfileFragment", "Started uploading profile picture");
+            }
+
+            @Override
+            public void onProgress(String requestId, long bytes, long totalBytes) {
+                // Could implement a progress bar here
+                double progress = (double) bytes / totalBytes;
+                Log.d("ProfileFragment", "Upload progress: " + (int)(progress * 100) + "%");
+            }
+
+            @Override
+            public void onSuccess(String requestId, Map resultData) {
+                // Get the image URL from the result
+                String imageUrl = CloudinaryManager.getImageUrl(resultData);
+                Log.d("ProfileFragment", "Cloudinary upload successful, image URL: " + imageUrl);
+                
+                // Update the user's profile with the new image URL
+                if (imageUrl != null && !imageUrl.isEmpty()) {
+                    viewModel.updateProfilePicture(imageUrl);
+                    
+                    // Update the UI immediately for better user experience
+                    requireActivity().runOnUiThread(() -> {
+                        Glide.with(ProfileFragment.this)
+                                .load(imageUrl)
+                                .circleCrop()
+                                .into(profileImage);
+                    });
+                }
+            }
+
+            @Override
+            public void onError(String requestId, ErrorInfo error) {
+                Log.e("ProfileFragment", "Error uploading to Cloudinary: " + error.getDescription());
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), 
+                            "Failed to upload image: " + error.getDescription(), 
+                            Toast.LENGTH_LONG).show();
+                });
+            }
+
+            @Override
+            public void onReschedule(String requestId, ErrorInfo error) {
+                Log.e("ProfileFragment", "Cloudinary upload rescheduled due to error: " + error.getDescription());
+            }
+        });
     }
 }

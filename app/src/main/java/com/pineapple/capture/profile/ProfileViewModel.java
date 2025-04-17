@@ -537,6 +537,38 @@ public class ProfileViewModel extends ViewModel {
         return username != null && username.matches("^[a-zA-Z0-9_.]{3,30}$");
     }
 
+    public void updateProfilePicture(String imageUrl) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            errorMessage.setValue("No user is currently signed in");
+            return;
+        }
+
+        isLoading.setValue(true);
+        
+        // Create a list with the profile image URL
+        List<String> profileUrls = new ArrayList<>();
+        profileUrls.add(imageUrl);
+        
+        // Update profile picture in Firestore
+        db.collection("users").document(user.getUid())
+            .update("profilePictureUrl", profileUrls)
+            .addOnSuccessListener(aVoid -> {
+                // Update the local user data
+                User currentUser = userData.getValue();
+                if (currentUser != null) {
+                    currentUser.setProfilePictureUrl(profileUrls);
+                    userData.setValue(currentUser);
+                }
+                errorMessage.setValue("Profile picture updated successfully");
+                isLoading.setValue(false);
+            })
+            .addOnFailureListener(e -> {
+                errorMessage.setValue("Failed to update profile picture: " + e.getMessage());
+                isLoading.setValue(false);
+            });
+    }
+
     public LiveData<User> getUserData() {
         return userData;
     }
